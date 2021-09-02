@@ -9,10 +9,10 @@ using Nancy.Json;
 using zlib;
 using DevExpress.XtraEditors;
 using System.Security.Cryptography;
-using Blowfish;
 using System.Runtime.InteropServices;
 using System.Net;
 using System.Threading;
+using Simias.Encryption;
 
 namespace HappyTool
 {
@@ -35,7 +35,8 @@ namespace HappyTool
         public static HttpListenerContext context;
         static HttpListener _httpListener;
         public static bool FirstResponseHasHit = false;
-        public static string blowfishText = "/* XDASEA_Xm8R_SPsX */";
+
+
 
         #endregion
 
@@ -115,7 +116,6 @@ namespace HappyTool
 
         private void Dropbox_DragDrop(object sender, DragEventArgs e)
         {
-            Helper options = new Helper();
             try
             {
                 Data2 = File.ReadAllText(CurrentFullPath);
@@ -151,16 +151,16 @@ namespace HappyTool
                             }
                             if (!HappyTool.Helper.IsAlreadyCompressed(CurrentFullName))
                             {
-                                options.ZlibCompression(HappyTool.Helper.ZlibOptions.Compress, CurrentFullName);
+                                HappyTool.Helper.ZlibCompression(HappyTool.Helper.Options.Zlib, CurrentFullName);
                             }
                         }
                     }
                 }
                 else
                 {
-                    if (!HappyTool.Helper.IsAlreadyCompressed(CurrentFullName))
+                    if (!HappyTool.Helper.IsAlreadyCompressed(CurrentFullPath))
                     {
-                        options.ZlibCompression(HappyTool.Helper.ZlibOptions.Compress, CurrentFullName);
+                        HappyTool.Helper.ZlibCompression(HappyTool.Helper.Options.Zlib, CurrentFullPath);
                     }
 
                 }
@@ -186,13 +186,13 @@ namespace HappyTool
                                 CurrentFullPath = Path.GetFullPath(file.FullName);
                                 Data = File.ReadAllBytes(CurrentFullPath);
                             }
-                            catch (Exception)
+                            catch
                             {
 
                             }
                             if (HappyTool.Helper.IsAlreadyCompressed(file.FullName))
                             {
-                                options.ZlibCompression(HappyTool.Helper.ZlibOptions.Decompress, CurrentFullPath);
+                                HappyTool.Helper.ZlibCompression(HappyTool.Helper.Options.Zlib, CurrentFullPath);
                             }
                         }
                     }
@@ -218,7 +218,7 @@ namespace HappyTool
                             }
                             if (HappyTool.Helper.IsAlreadyCompressed(file.FullName))
                             {
-                                options.ZlibCompression(HappyTool.Helper.ZlibOptions.Decompress, CurrentFullPath);
+                                HappyTool.Helper.ZlibCompression(HappyTool.Helper.Options.UnZlib, CurrentFullPath);
                             }
                         }
                     }
@@ -228,7 +228,7 @@ namespace HappyTool
                 {
                     if (HappyTool.Helper.IsAlreadyCompressed(CurrentFullPath))
                     {
-                        options.ZlibCompression(HappyTool.Helper.ZlibOptions.Decompress, CurrentFullPath);
+                        HappyTool.Helper.ZlibCompression(HappyTool.Helper.Options.UnZlib, CurrentFullPath);
                         MessageBox.Show("Decompressed File..." + " \"" + CurrentFullName + " \"");
                     }
 
@@ -237,12 +237,12 @@ namespace HappyTool
             }
             if (sender.Equals(BlowfishEncryption))
             {
-                HappyTool.Helper.BlowfishData(HappyTool.Helper.BlowfishOptions.Encrypt, CurrentExeFullPath);
+                HappyTool.Helper.BlowfishData(HappyTool.Helper.Options.BlowFishAndCompress, CurrentFullPath);
                 MessageBox.Show("Adding BlowFishing Encryption..." + " \"" + CurrentFullName + " \"");
             }
             if (sender.Equals(BlowfishDecryption))
             {
-                HappyTool.Helper.BlowfishData(HappyTool.Helper.BlowfishOptions.Decrypt, CurrentExeFullPath);
+                HappyTool.Helper.BlowfishData(HappyTool.Helper.Options.UndoBlowFishAndCompress, CurrentFullPath);
                 MessageBox.Show("Removing BlowFishing Encryption..." + " \"" + CurrentFullName + " \"");
             }
             if (sender.Equals(Patchexe))

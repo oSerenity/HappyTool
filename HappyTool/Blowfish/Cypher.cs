@@ -1,13 +1,13 @@
 ﻿namespace Blowfish
 {
-  public interface Cypher
-  {
-    byte[] Encrypt(byte[] target);
+    using System;
 
-    string Encrypt(string target);
-
-    byte[] Decrypt(byte[] target);
-
-    string Decrypt(string target);
-  }
+    public interface Cypher
+    {
+        byte[] Decrypt(byte[] target);
+        string Decrypt(string target);
+        byte[] Encrypt(byte[] target);
+        string Encrypt(string target);
+    }
 }
+

@@ -1,4 +1,6 @@
 ﻿using Blowfish;
+using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
+using Simias.Encryption;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,34 +15,31 @@ namespace HappyTool
 {
     public class Helper
     {
+        public static Simias.Encryption.Blowfish bf = new Simias.Encryption.Blowfish(Encoding.UTF8.GetBytes("04B915BA43FEB5B6"));
         public string Address { get; set; }
         public string Port { get; set; }
-
-        [DllImport("blowfish_cpp.dll")]
-        private static extern uint get_tag_length();
-
         [DllImport("blowfish_cpp.dll")]
         private static extern void get_tag(byte[] o);
+        [DllImport("blowfish_cpp.dll")]
+        private static extern uint get_tag_length();
         #region Zlib Compress/Decompress
-        public enum ZlibOptions
+        public enum Options
         {
-            Compress,
-            Decompress
+            Xbox,
+            Steam,
+            Zlib,
+            UnZlib,
+            Blowfish,
+            BlowFishAndCompress,
+            UndoBlowFishAndCompress
         }
-        public enum BlowfishOptions
-        {
-            Encrypt,
-            Decrypt,
-            EncryptBlowfishAndCompress,
-            DecryptBlowfishAndCompress
-        }
-        public void ZlibCompression(ZlibOptions CompressionType, string Path)
+        public static void ZlibCompression(Options CompressionType, string Path)
         {
             //uses the same Path To Output
             string outFile = Path + "." + CompressionType.ToString();
             switch (CompressionType)
             {
-                case ZlibOptions.Compress:
+                case Options.Zlib:
                     {
                         FileStream stream = new FileStream(outFile, FileMode.Create);
                         ZOutputStream output = new ZOutputStream(stream, -1);
@@ -76,7 +75,7 @@ namespace HappyTool
                         }
                         break;
                     }
-                case ZlibOptions.Decompress:
+                case Options.UnZlib:
                     {
                         if (!Path.Contains(".temp"))
                         {
@@ -159,80 +158,174 @@ namespace HappyTool
         }
         private static bool IsFileNonUpdate(string distFile, string srcFile) => 0 < new FileInfo(distFile).LastWriteTime.CompareTo(new FileInfo(srcFile).LastWriteTime);
         #endregion
-
-        #region Blowfish Encryption/Decryption
-        public static void BlowfishData(BlowfishOptions options, string path)
+        private static void Swap(byte[] buff, int pos1, int pos2)
         {
-            FileStream fileStream;
+            byte b = buff[pos1];
+            buff[pos1] = buff[pos2];
+            buff[pos2] = b;
+        }
+
+        private static void EndianSwap(byte[] buff)
+        {
+            for (int i = 0; i < buff.Length / 4; i++)
+            {
+                Swap(buff, i * 4, i * 4 + 3);
+                Swap(buff, i * 4 + 1, i * 4 + 2);
+            }
+        }
+
+        private static uint ReadU32(Stream s)
+        {
+            byte[] buff = new byte[4];
+            s.Read(buff, 0, 4);
+            return BitConverter.ToUInt32(buff, 0);
+        }
+
+        private static byte[] Decompress(Stream s)
+        {
+            MemoryStream m = new MemoryStream();
+            using (InflaterInputStream inf = new InflaterInputStream(s))
+            {
+                inf.CopyTo(m);
+            }
+            return m.ToArray();
+        }
+
+        public static string Decrypt(byte[] data)
+        {
+            MemoryStream m;
+            uint check = ReadU32(m = new MemoryStream(data));
+            if (check != 0x52424642)
+            {
+                return "Not a valid file!";
+            }
+            int size = data.Length - 4;
+            if ((size % 8) != 0)
+            {
+                return "Not a valid file!";
+            }
+            byte[] buff = new byte[size];
+            m.Read(buff, 0, size);
+            EndianSwap(buff);
+            bf.Decipher(buff, size);
+            EndianSwap(buff);
+            m = new MemoryStream(buff);
+            int pSize = (int)ReadU32(m);
+            m.Seek(0x2C, SeekOrigin.Begin);
+            buff = new byte[pSize - 8];
+            m.Read(buff, 0, pSize - 8);
+            m = new MemoryStream(buff);
+            buff = Decompress(m);
+            return Encoding.GetEncoding(932).GetString(buff);
+        }
+        #region Blowfish Encryption/Decryption
+        public static void BlowfishData(Options options, string path)
+        {
             switch (options)
             {
-                case BlowfishOptions.Encrypt:
+                case Options.UndoBlowFishAndCompress:
                     {
-                        using (fileStream = new FileStream(path, FileMode.Open, FileAccess.Read))
-                        {
-                            int length = (int)fileStream.Length;
-                            int num = 36 + length;
-                            MainForm.Data = new byte[Utility.AlignSize(num)];
-                            fileStream.Read(MainForm.Data, 36, length);
-                            Array.Clear(MainForm.Data, num, MainForm.Data.Length - num);
-
-                            //we need use the original hash Form Previous file
-                            byte[] hash = SHA256.Create().ComputeHash(MainForm.Data, 36, length);
-                            byte[] bytes = BitConverter.GetBytes(length);
-                            Array.Copy((Array)bytes, (Array)MainForm.Data, bytes.Length);
-                            Array.Copy((Array)hash, 0, (Array)MainForm.Data, bytes.Length, hash.Length);
-                            MainForm.Data = Factory.Create(Factory.Type.Safe, "04B915BA43FEB5B6").Encrypt(MainForm.Data);
-                            using (fileStream = new FileStream(MainForm.CurrentFullPath + ".encrypt", FileMode.OpenOrCreate, FileAccess.Write))
-                            {
-                                Encoding.GetEncoding("Shift_JIS");
-                                byte[] numArray2 = new byte[get_tag_length()];
-                                get_tag(numArray2);
-                                fileStream.Write(numArray2, 0, numArray2.Length);
-                                fileStream.Write(MainForm.Data, 0, MainForm.Data.Length);
-                            }
-                        }
+                        File.WriteAllText(path, Decrypt(File.ReadAllBytes(path)));
                         break;
                     }
-                case BlowfishOptions.Decrypt:
+                case Options.BlowFishAndCompress:
                     {
-                        using (fileStream = new FileStream(path, FileMode.Open, FileAccess.Read))
-                        {
-                            int length = (int)fileStream.Length;
-                            int num = 36 + length;
-                            MainForm.Data = new byte[Utility.AlignSize(num)];
-                            fileStream.Read(MainForm.Data, 36, length);
-                            Array.Clear(MainForm.Data, num, MainForm.Data.Length - num);
-
-                            //we need use the original hash Form Previous file
-                            byte[] hash = SHA256.Create().ComputeHash(MainForm.Data, 36, length);
-                            byte[] bytes = BitConverter.GetBytes(length);
-                            Array.Copy((Array)bytes, (Array)MainForm.Data, bytes.Length);
-                            Array.Copy((Array)hash, 0, (Array)MainForm.Data, bytes.Length, hash.Length);
-                            MainForm.Data = Factory.Create(Factory.Type.Safe, "04B915BA43FEB5B6").Decrypt(MainForm.Data);
-                            using (fileStream = new FileStream(MainForm.CurrentFullPath + ".encrypt", FileMode.OpenOrCreate, FileAccess.Write))
-                            {
-                                Encoding.GetEncoding("Shift_JIS");
-                                byte[] numArray2 = new byte[get_tag_length()];
-                                get_tag(numArray2);
-                                //fileStream.Write(numArray2, 0, numArray2.Length);
-                                fileStream.Write(MainForm.Data, 0, MainForm.Data.Length);
-                            }
-                        }
-                        break;
-                    }
-                case BlowfishOptions.EncryptBlowfishAndCompress:
-                    {
-                        break;
-                    }
-                case BlowfishOptions.DecryptBlowfishAndCompress:
-                    {
-
+                        //compresses it fisrt then it blowfish encryption
+                        //ZlibCompression(Options.Zlib, path);
+                        Blowfish(path, path);
                         break;
                     }
             }
 
 
         }
+
+        public static void Blowfish(string Path, string output)
+        {
+
+            FileStream stream = new FileStream(Path + ".temp", FileMode.Create);
+            ZOutputStream xoutput = new ZOutputStream(stream, -1);
+            FileStream input = new FileStream(Path, FileMode.Open);
+            try
+            {
+                stream.WriteByte(Convert.ToByte('Z'));
+                stream.WriteByte(Convert.ToByte('R'));
+                stream.WriteByte(Convert.ToByte('E'));
+                stream.WriteByte(Convert.ToByte('S'));
+                int num = Convert.ToInt32(new FileInfo(Path).Length);
+                stream.WriteByte(Convert.ToByte((int)(num & 0xff)));
+                stream.WriteByte(Convert.ToByte((int)((num >> 8) & 0xff)));
+                stream.WriteByte(Convert.ToByte((int)((num >> 0x10) & 0xff)));
+                stream.WriteByte(Convert.ToByte((int)((num >> 0x18) & 0xff)));
+                try
+                {
+                    CopyStream(input, xoutput);
+                }
+                catch (Exception)
+                {
+                    xoutput.Close();
+                    stream.Close();
+                    input.Close();
+                    return;
+                }
+            }
+            finally
+            {
+                xoutput.Close();
+                stream.Close();
+                input.Close();
+                byte[] buffer;
+                using (FileStream BlowfishStream = new FileStream(Path + ".temp", FileMode.Open, FileAccess.Read))
+                {
+
+                    int length = (int)BlowfishStream.Length;
+                    int size = 0x24 + length;
+                    buffer = new byte[Utility.AlignSize(size)];
+                    BlowfishStream.Read(buffer, 0x24, length);
+                    Array.Clear(buffer, size, buffer.Length - size);
+                    byte[] sourceArray = SHA256.Create().ComputeHash(buffer, 0x24, length);
+                    byte[] bytes = BitConverter.GetBytes(length);
+                    Array.Copy(bytes, buffer, bytes.Length);
+                    Array.Copy(sourceArray, 0, buffer, bytes.Length, sourceArray.Length);
+                    buffer = Factory.Create(Factory.Type.Safe, "04B915BA43FEB5B6").Encrypt(buffer);
+                    if (!File.Exists(output))
+                    {
+                        if (output == string.Empty)
+                        {
+                            output = Path + ".encrypt";
+                        }
+                        else
+                        {
+                            string fullPath = System.IO.Path.GetFullPath(output);
+                            Directory.CreateDirectory(fullPath);
+                            output = fullPath + System.IO.Path.GetFileName(Path) + ".encrypt";
+                        }
+                    }
+                }
+                using (FileStream stream2 = new FileStream(Path + ".temp", FileMode.OpenOrCreate, FileAccess.Write))
+                {
+                    Encoding.GetEncoding("Shift_JIS");
+                    byte[] o = new byte[get_tag_length()];//4 bytes
+                    get_tag(o);//grabs 4 bytes 
+                    stream2.Write(o, 0, o.Length);
+                    stream2.Write(buffer, 0, buffer.Length);
+
+                }
+                if (File.Exists(Path))
+                {
+
+                    File.WriteAllBytes(Path, File.ReadAllBytes(Path + ".temp"));
+                    File.Delete(Path + ".temp");
+                }
+            }
+
+        }
+        //public static void get_tag(byte[] Destination)
+        //{
+        //    byte[] xDestination;
+        //    //byte[] unk_10003128 = null;
+        //    //Array.Copy(Destination, 4, &xDestination.Length, 4 , 4);
+        //}
         #endregion
         #region NetWorking
         public bool IsDllPatched(string path)
