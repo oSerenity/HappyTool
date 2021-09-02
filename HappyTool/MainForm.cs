@@ -28,7 +28,6 @@ namespace HappyTool
         public static string DataReturned { get; private set; }
         public string CurrentExeFullPath { get; private set; }
         public string CurrentExeFullName { get; private set; }
-
         public byte[] ExeData { get; private set; }
         public static bool ON = true;
         private Thread _responseThread;
@@ -152,6 +151,7 @@ namespace HappyTool
                             if (!HappyTool.Helper.IsAlreadyCompressed(CurrentFullName))
                             {
                                 HappyTool.Helper.ZlibCompression(HappyTool.Helper.Options.Zlib, CurrentFullName);
+
                             }
                         }
                     }
@@ -161,6 +161,7 @@ namespace HappyTool
                     if (!HappyTool.Helper.IsAlreadyCompressed(CurrentFullPath))
                     {
                         HappyTool.Helper.ZlibCompression(HappyTool.Helper.Options.Zlib, CurrentFullPath);
+                        MessageBox.Show("Decompressed File... " + CurrentFullPath);
                     }
 
                 }
@@ -276,7 +277,7 @@ namespace HappyTool
 
         private void Patchexe_DragDrop(object sender, DragEventArgs e)
         {
-            //Checks if User Has The Custom Patch Appylied Into The EXE 
+            //Checks if User Has The Custom Patch Applied Into The EXE 
             PatchMethod();
         }
 
@@ -290,15 +291,14 @@ namespace HappyTool
         {
             Helper options = new Helper();
             options.Address = Address.Text;
-            options.Port = Port.Text;
             if (!options.IsExePatched(CurrentExeFullPath))
             {
                 if (Path.GetExtension(CurrentExeFullPath) == ".exe")
                 {
-                    ReplaceData(CurrentExeFullPath, 0x1002A50, Encoding.ASCII.GetBytes("http://" + Address.Text + ":" + Port.Text + "/"));
-                    ReplaceData(CurrentExeFullPath, 0x1002AC8, Encoding.ASCII.GetBytes("http://" + Address.Text + ":" + Port.Text + "/"));
-                    ReplaceData(CurrentExeFullPath, 0x1002B0C, Encoding.ASCII.GetBytes("http://" + Address.Text + ":" + Port.Text + "/"));
-                    ReplaceData(CurrentExeFullPath, 0x1002B58, Encoding.ASCII.GetBytes("http://" + Address.Text + ":" + Port.Text + "/"));
+                    ReplaceData(CurrentExeFullPath, 0x1002A50, Encoding.ASCII.GetBytes("http://" + Address.Text + "/"));
+                    ReplaceData(CurrentExeFullPath, 0x1002AC8, Encoding.ASCII.GetBytes("http://" + Address.Text + "/"));
+                    ReplaceData(CurrentExeFullPath, 0x1002B0C, Encoding.ASCII.GetBytes("http://" + Address.Text +  "/"));
+                    ReplaceData(CurrentExeFullPath, 0x1002B58, Encoding.ASCII.GetBytes("http://" + Address.Text + "/"));
                     MessageBox.Show("Patched!");
                 }
                 else if (Path.GetExtension(CurrentExeFullPath) == ".dll")
@@ -394,13 +394,13 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
             }
             if(_httpListener == null)
             {
-                this.labelControl2.Text = "Starting server...";
+                labelControl2.Text = "Starting server...";
                 _httpListener = new HttpListener();
-                _httpListener.Prefixes.Add(string.Concat(new string[] { "http://", this.Address.Text, ":", this.Port.Text, "/" }));
+                _httpListener.Prefixes.Add(string.Concat(new string[] { "http://", Address.Text, "/" }));
                 _httpListener.Start();
-                this.labelControl2.Text = "Server started.";
-                this._responseThread = new Thread(new ThreadStart(ResponseThread));
-                this._responseThread.Start();
+                labelControl2.Text = "Server started.";
+                _responseThread = new Thread(new ThreadStart(ResponseThread));
+                _responseThread.Start();
             }
             else
             {

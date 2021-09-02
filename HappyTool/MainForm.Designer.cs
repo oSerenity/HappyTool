@@ -39,8 +39,6 @@ namespace HappyTool
             this.xtraTabPage3 = new DevExpress.XtraTab.XtraTabPage();
             this.TurnOffServer = new DevExpress.XtraEditors.CheckButton();
             this.Patchexe = new DevExpress.XtraEditors.GroupControl();
-            this.labelControl4 = new DevExpress.XtraEditors.LabelControl();
-            this.Port = new DevExpress.XtraEditors.TextEdit();
             this.labelControl3 = new DevExpress.XtraEditors.LabelControl();
             this.Address = new DevExpress.XtraEditors.TextEdit();
             this.labelControl2 = new DevExpress.XtraEditors.LabelControl();
@@ -55,7 +53,6 @@ namespace HappyTool
             this.xtraTabPage1.SuspendLayout();
             this.xtraTabPage3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Patchexe)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.Port.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.Address.Properties)).BeginInit();
             this.xtraTabPage2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.BlowfishEncryption)).BeginInit();
@@ -117,8 +114,6 @@ namespace HappyTool
             // 
             this.xtraTabPage3.Controls.Add(this.TurnOffServer);
             this.xtraTabPage3.Controls.Add(this.Patchexe);
-            this.xtraTabPage3.Controls.Add(this.labelControl4);
-            this.xtraTabPage3.Controls.Add(this.Port);
             this.xtraTabPage3.Controls.Add(this.labelControl3);
             this.xtraTabPage3.Controls.Add(this.Address);
             this.xtraTabPage3.Controls.Add(this.labelControl2);
@@ -150,22 +145,6 @@ namespace HappyTool
             this.Patchexe.DragDrop += new System.Windows.Forms.DragEventHandler(this.Patchexe_DragDrop);
             this.Patchexe.DragEnter += new System.Windows.Forms.DragEventHandler(this.Patchexe_DragEnter);
             // 
-            // labelControl4
-            // 
-            this.labelControl4.Location = new System.Drawing.Point(11, 72);
-            this.labelControl4.Name = "labelControl4";
-            this.labelControl4.Size = new System.Drawing.Size(24, 13);
-            this.labelControl4.TabIndex = 7;
-            this.labelControl4.Text = "Port:";
-            // 
-            // Port
-            // 
-            this.Port.EditValue = "12345";
-            this.Port.Location = new System.Drawing.Point(11, 91);
-            this.Port.Name = "Port";
-            this.Port.Size = new System.Drawing.Size(100, 20);
-            this.Port.TabIndex = 6;
-            // 
             // labelControl3
             // 
             this.labelControl3.Location = new System.Drawing.Point(11, 27);
@@ -176,7 +155,7 @@ namespace HappyTool
             // 
             // Address
             // 
-            this.Address.EditValue = "localhost";
+            this.Address.EditValue = "localhost:12345";
             this.Address.Location = new System.Drawing.Point(11, 46);
             this.Address.Name = "Address";
             this.Address.Size = new System.Drawing.Size(100, 20);
@@ -263,7 +242,6 @@ namespace HappyTool
             this.xtraTabPage3.ResumeLayout(false);
             this.xtraTabPage3.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Patchexe)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.Port.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.Address.Properties)).EndInit();
             this.xtraTabPage2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.BlowfishEncryption)).EndInit();
@@ -287,8 +265,6 @@ namespace HappyTool
         private DevExpress.XtraEditors.LabelControl labelControl2;
         private DevExpress.XtraEditors.LabelControl labelControl1;
         private DevExpress.XtraEditors.TextEdit Address;
-        private DevExpress.XtraEditors.LabelControl labelControl4;
-        private DevExpress.XtraEditors.TextEdit Port;
         private DevExpress.XtraEditors.LabelControl labelControl3;
         private System.Windows.Forms.Timer timer1;
         private DevExpress.XtraEditors.GroupControl Patchexe;

@@ -17,7 +17,6 @@ namespace HappyTool
     {
         public static Simias.Encryption.Blowfish bf = new Simias.Encryption.Blowfish(Encoding.UTF8.GetBytes("04B915BA43FEB5B6"));
         public string Address { get; set; }
-        public string Port { get; set; }
         [DllImport("blowfish_cpp.dll")]
         private static extern void get_tag(byte[] o);
         [DllImport("blowfish_cpp.dll")]
@@ -331,11 +330,11 @@ namespace HappyTool
         public bool IsDllPatched(string path)
         {
             //we convert from byte to hex then finally string in one go, we also make sure that the length is the same as user's input.
-            string s1 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002A50, Address.Length + Port.Length + 1))));
-            string s2 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002AC8, Address.Length + Port.Length + 1))));
-            string s3 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002B0C, Address.Length + Port.Length + 1))));
-            string s4 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002B58, Address.Length + Port.Length + 1))));
-            if (s1 == "http://" + Address + ":" + Port + "/" && s2 == "http://" + Address + ":" + Port + "/" && s3 == "http://" + Address + ":" + Port + "/" && s4 == "http://" + Address + ":" + Port + "/")
+            string s1 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002A50, Address.Length + 1))));
+            string s2 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002AC8, Address.Length + 1))));
+            string s3 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002B0C, Address.Length + 1))));
+            string s4 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002B58, Address.Length + 1))));
+            if (s1 == "http://" + Address  +"/" && s2 == "http://" + Address + "/" && s3 == "http://" + Address + "/" && s4 == "http://" + Address + "/")
             {
                 return true;
             }
@@ -383,7 +382,7 @@ namespace HappyTool
             string s2 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002AC8, 81)))).Replace("0\\", string.Empty);
             string s3 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002B0C, 81)))).Replace("0\\", string.Empty);
             string s4 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002B58, 81)))).Replace("0\\", string.Empty);
-            string local = "http://" + Address + ":" + Port + "/";
+            string local = "http://" + Address + "/";
             if (s1.Contains(local) && s2.Contains(local) && s3.Contains(local) && s4.Contains(local))
             {
                 return true;
