@@ -1,6 +1,6 @@
-﻿using Blowfish;
-using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
+﻿
 using Simias.Encryption;
+//using Simias.Encryption;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,12 +15,8 @@ namespace HappyTool
 {
     public class Helper
     {
-        public static Simias.Encryption.Blowfish bf = new Simias.Encryption.Blowfish(Encoding.UTF8.GetBytes("04B915BA43FEB5B6"));
+        public static Blowfish bf = new Blowfish(Encoding.UTF8.GetBytes("04B915BA43FEB5B6"));
         public string Address { get; set; }
-        [DllImport("blowfish_cpp.dll")]
-        private static extern void get_tag(byte[] o);
-        [DllImport("blowfish_cpp.dll")]
-        private static extern uint get_tag_length();
         #region Zlib Compress/Decompress
         public enum Options
         {
@@ -29,10 +25,10 @@ namespace HappyTool
             Zlib,
             UnZlib,
             Blowfish,
-            BlowFishAndCompress,
+            CompressAndBlowfish,
             UndoBlowFishAndCompress
         }
-        public static void ZlibCompression(Options CompressionType, string Path)
+        public static void Data(Options CompressionType, string Path)
         {
             //uses the same Path To Output
             string outFile = Path + "." + CompressionType.ToString();
@@ -45,10 +41,7 @@ namespace HappyTool
                         FileStream input = new FileStream(Path, FileMode.Open);
                         try
                         {
-                            stream.WriteByte(Convert.ToByte('Z'));
-                            stream.WriteByte(Convert.ToByte('R'));
-                            stream.WriteByte(Convert.ToByte('E'));
-                            stream.WriteByte(Convert.ToByte('S'));
+                            stream.Write(Encoding.ASCII.GetBytes("ZRES"), 0, 4);
                             int num = Convert.ToInt32(new FileInfo(Path).Length);
                             stream.WriteByte(Convert.ToByte((int)(num & 0xff)));
                             stream.WriteByte(Convert.ToByte((int)((num >> 8) & 0xff)));
@@ -104,7 +97,7 @@ namespace HappyTool
                                 //we Shift The Byte's For Language.
                                 var japaneseEncoding = Encoding.GetEncoding(932);
                                 // Reed From file bytes
-                                string japaneseTextFromFile = japaneseEncoding.GetString(File.ReadAllBytes(inFilePath + ".Decompress"));
+                                string japaneseTextFromFile = japaneseEncoding.GetString(File.ReadAllBytes(inFilePath));
                                 //We Write New FIle With Shifted Bytes
                                 File.WriteAllText(inFilePath, japaneseTextFromFile);
                                 //We Clean Up
@@ -180,57 +173,25 @@ namespace HappyTool
             return BitConverter.ToUInt32(buff, 0);
         }
 
-        private static byte[] Decompress(Stream s)
-        {
-            MemoryStream m = new MemoryStream();
-            using (InflaterInputStream inf = new InflaterInputStream(s))
-            {
-                inf.CopyTo(m);
-            }
-            return m.ToArray();
-        }
 
-        public static string Decrypt(byte[] data)
-        {
-            MemoryStream m;
-            uint check = ReadU32(m = new MemoryStream(data));
-            if (check != 0x52424642)
-            {
-                return "Not a valid file!";
-            }
-            int size = data.Length - 4;
-            if ((size % 8) != 0)
-            {
-                return "Not a valid file!";
-            }
-            byte[] buff = new byte[size];
-            m.Read(buff, 0, size);
-            EndianSwap(buff);
-            bf.Decipher(buff, size);
-            EndianSwap(buff);
-            m = new MemoryStream(buff);
-            int pSize = (int)ReadU32(m);
-            m.Seek(0x2C, SeekOrigin.Begin);
-            buff = new byte[pSize - 8];
-            m.Read(buff, 0, pSize - 8);
-            m = new MemoryStream(buff);
-            buff = Decompress(m);
-            return Encoding.GetEncoding(932).GetString(buff);
-        }
+
+
         #region Blowfish Encryption/Decryption
         public static void BlowfishData(Options options, string path)
         {
             switch (options)
             {
-                case Options.UndoBlowFishAndCompress:
-                    {
-                        File.WriteAllText(path, Decrypt(File.ReadAllBytes(path)));
+                case Options.UndoBlowFishAndCompress://TODO:Work On Decryption
+                    {//remove blowfish first then get rid of zlib
+
+                        //File.WriteAllText(path, Decrypt(File.ReadAllBytes(path)));
                         break;
                     }
-                case Options.BlowFishAndCompress:
+                case Options.CompressAndBlowfish:
                     {
                         //compresses it fisrt then it blowfish encryption
                         //ZlibCompression(Options.Zlib, path);
+
                         Blowfish(path, path);
                         break;
                     }
@@ -247,15 +208,12 @@ namespace HappyTool
             FileStream input = new FileStream(Path, FileMode.Open);
             try
             {
-                stream.WriteByte(Convert.ToByte('Z'));
-                stream.WriteByte(Convert.ToByte('R'));
-                stream.WriteByte(Convert.ToByte('E'));
-                stream.WriteByte(Convert.ToByte('S'));
+                stream.Write(Encoding.ASCII.GetBytes("ZRES"), 0, 4);
                 int num = Convert.ToInt32(new FileInfo(Path).Length);
-                stream.WriteByte(Convert.ToByte((int)(num & 0xff)));
-                stream.WriteByte(Convert.ToByte((int)((num >> 8) & 0xff)));
-                stream.WriteByte(Convert.ToByte((int)((num >> 0x10) & 0xff)));
-                stream.WriteByte(Convert.ToByte((int)((num >> 0x18) & 0xff)));
+                stream.WriteByte(Convert.ToByte(num & 0xff));
+                stream.WriteByte(Convert.ToByte((num >> 8) & 0xff));
+                stream.WriteByte(Convert.ToByte((num >> 0x10) & 0xff));
+                stream.WriteByte(Convert.ToByte((num >> 0x18) & 0xff));
                 try
                 {
                     CopyStream(input, xoutput);
@@ -273,130 +231,54 @@ namespace HappyTool
                 xoutput.Close();
                 stream.Close();
                 input.Close();
-                byte[] buffer;
-                using (FileStream BlowfishStream = new FileStream(Path + ".temp", FileMode.Open, FileAccess.Read))
-                {
+                stream = new FileStream(Path + ".temp", FileMode.OpenOrCreate, FileAccess.ReadWrite);
+                int length = (int)stream.Length;
+                int size = 0x24 + length;
+                byte[] buffer = new byte[xAlignSize(size)];
+                stream.Read(buffer, 0x24, length);
+                Array.Clear(buffer, size, buffer.Length - size);
+                byte[] sourceArray = SHA256.Create().ComputeHash(buffer, 0x24, length);
+                byte[] bytes = BitConverter.GetBytes(length);
+                Array.Copy(bytes, buffer, bytes.Length);
+                Array.Copy(sourceArray, 0, buffer, bytes.Length, sourceArray.Length);
+                buffer = Encrypt(buffer);
 
-                    int length = (int)BlowfishStream.Length;
-                    int size = 0x24 + length;
-                    buffer = new byte[Utility.AlignSize(size)];
-                    BlowfishStream.Read(buffer, 0x24, length);
-                    Array.Clear(buffer, size, buffer.Length - size);
-                    byte[] sourceArray = SHA256.Create().ComputeHash(buffer, 0x24, length);
-                    byte[] bytes = BitConverter.GetBytes(length);
-                    Array.Copy(bytes, buffer, bytes.Length);
-                    Array.Copy(sourceArray, 0, buffer, bytes.Length, sourceArray.Length);
-                    buffer = Factory.Create(Factory.Type.Safe, "04B915BA43FEB5B6").Encrypt(buffer);
-                    if (!File.Exists(output))
-                    {
-                        if (output == string.Empty)
-                        {
-                            output = Path + ".encrypt";
-                        }
-                        else
-                        {
-                            string fullPath = System.IO.Path.GetFullPath(output);
-                            Directory.CreateDirectory(fullPath);
-                            output = fullPath + System.IO.Path.GetFileName(Path) + ".encrypt";
-                        }
-                    }
-                }
-                using (FileStream stream2 = new FileStream(Path + ".temp", FileMode.OpenOrCreate, FileAccess.Write))
-                {
-                    Encoding.GetEncoding("Shift_JIS");
-                    byte[] o = new byte[get_tag_length()];//4 bytes
-                    get_tag(o);//grabs 4 bytes 
-                    stream2.Write(o, 0, o.Length);
-                    stream2.Write(buffer, 0, buffer.Length);
-
-                }
+                Encoding.GetEncoding("Shift_JIS");
+                stream.Write(Encoding.ASCII.GetBytes("BFBR"), 0, 4);//writes the tag when file is closed
+                stream.Write(buffer, 0, buffer.Length);
+                stream.Close();
                 if (File.Exists(Path))
                 {
 
                     File.WriteAllBytes(Path, File.ReadAllBytes(Path + ".temp"));
                     File.Delete(Path + ".temp");
+                    
                 }
             }
 
         }
-        //public static void get_tag(byte[] Destination)
-        //{
-        //    byte[] xDestination;
-        //    //byte[] unk_10003128 = null;
-        //    //Array.Copy(Destination, 4, &xDestination.Length, 4 , 4);
-        //}
+        private static byte[] CreateAlignBytes(byte[] source)
+        {
+            if (AlignSize(source.Length) != source.Length)
+            {
+                Array.Resize(ref source, source.Length);
+                Array.Clear(source, source.Length, source.Length - source.Length);
+            }
+            return source;
+        }
+        private static int AlignSize(int size) => size + (8 - (size & 7));
+        public static byte[] Encrypt(byte[] target)
+        {
+            byte[] i = CreateAlignBytes(target);
+            bf.Encipher(i, i.Length);
+            return new byte[i.Length];
+        }
+        public static int xAlignSize(int size)
+        {
+            int num = ((size & 7) != 0) ? 1 : 0;
+            return (((size / 8) + num) * 8);
+        }
         #endregion
-        #region NetWorking
-        public bool IsDllPatched(string path)
-        {
-            //we convert from byte to hex then finally string in one go, we also make sure that the length is the same as user's input.
-            string s1 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002A50, Address.Length + 1))));
-            string s2 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002AC8, Address.Length + 1))));
-            string s3 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002B0C, Address.Length + 1))));
-            string s4 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002B58, Address.Length + 1))));
-            if (s1 == "http://" + Address  +"/" && s2 == "http://" + Address + "/" && s3 == "http://" + Address + "/" && s4 == "http://" + Address + "/")
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        public static byte[] ReadBytes(string path, int offset, int count)
-        {
-            using (var file = File.OpenRead(path))
-            {
-                file.Position = offset;
-                offset = 0;
-                byte[] buffer = new byte[count];
-                int read;
-                while (count > 0 && (read = file.Read(buffer, offset, count)) > 0)
-                {
-                    offset += read;
-                    count -= read;
-                }
-                if (count < 0) throw new EndOfStreamException();
-                return buffer;
-            }
-        }
-        public static byte[] FromHex(string hex)
-        {
-            hex = hex.Replace("-", "");
-            byte[] raw = new byte[hex.Length / 2];
-            for (int i = 0; i < raw.Length; i++)
-            {
-                raw[i] = Convert.ToByte(hex.Substring(i * 2, 2), 16);
-            }
-            return raw;
-        }
-        /// <summary>
-        /// Reads if File Has Been Patched To The User's Input
-        /// </summary>
-        /// <param name="Path"></param>
-        /// <returns></returns>
-        public bool IsExePatched(string path)
-        {
-            //we convert from byte to hex then finally string in one go, we also make sure that the length is the same as user's input.
-            string s1 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002A50, 81)))).Replace("0\\", string.Empty);
-            string s2 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002AC8, 81)))).Replace("0\\", string.Empty);
-            string s3 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002B0C, 81)))).Replace("0\\", string.Empty);
-            string s4 = Encoding.ASCII.GetString(FromHex(BitConverter.ToString(ReadBytes(path, 0x1002B58, 81)))).Replace("0\\", string.Empty);
-            string local = "http://" + Address + "/";
-            if (s1.Contains(local) && s2.Contains(local) && s3.Contains(local) && s4.Contains(local))
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        //    // string idk = "http://www.idk17.xyz";
-        //    byte[] bytes1 = Encoding.ASCII.GetBytes("https://gameapi.happywarspc.msgamestudios.com/api");
-        //    byte[] bytes2 = Encoding.ASCII.GetBytes("https://sts.happywarspc.msgamestudios.com/api/RefreshXstsToken?targetType=Product");
-        //    byte[] bytes3 = Encoding.ASCII.GetBytes("https://telemetry.happywarspc.msgamestudios.com/api");
-        //    byte[] bytes4 = Encoding.ASCII.GetBytes("https://purchasing.happywarspc.msgamestudios.com/api");
-        #endregion
+
     }
 }
