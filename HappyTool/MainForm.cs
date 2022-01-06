@@ -1,18 +1,11 @@
-﻿using System.Net.Http;
-using System.Collections;
+﻿using DevExpress.XtraEditors;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Windows.Forms;
-using Nancy.Json;
-using zlib;
-using DevExpress.XtraEditors;
-using System.Security.Cryptography;
-using System.Runtime.InteropServices;
-using System.Net;
-using System.Threading;
 using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Text;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace HappyTool
 {
@@ -20,20 +13,14 @@ namespace HappyTool
     {
 
         #region PlaceHolders
-        public static string CurrentFullPath { get; set; }
-        public static string CurrentFullName { get; set; }
-        public static string DataReturned { get; private set; }
-        public string CurrentExeFullPath { get; private set; }
-        public string CurrentExeFullName { get; private set; }
+        public string CurrentFullPath { get; private set; }
+        public string CurrentFullName { get; private set; }
         public static int TicketSum { get; private set; }
         public static int patchAddress1 { get; private set; }
         public static int patchAddress2 { get; private set; }
         public static int patchAddress3 { get; private set; }
         public static int patchAddress4 { get; private set; }
-
-
-
-        public static bool ON = true;
+        public static bool ON { get; private set; } = true;
         private Thread _responseThread;
         public static HttpListenerContext context;
         static HttpListener _httpListener;
@@ -91,7 +78,8 @@ namespace HappyTool
         #endregion
 
         #region FileDrop Functions
-        private void Dropbox_DragEnter(object sender, DragEventArgs e)
+
+        private void Patchexe_DragEnter(object sender, DragEventArgs e)
         {
             // See if this is a copy and the data includes text.
             if (e.Data.GetDataPresent(DataFormats.FileDrop) && (e.AllowedEffect & DragDropEffects.Copy) != 0)
@@ -102,29 +90,6 @@ namespace HappyTool
                 CurrentFullPath = Path.GetFullPath(CurrentFile[0]);
                 //Sets FullName Path
                 CurrentFullName = Path.GetFileName(CurrentFile[0]);
-                e.Effect = DragDropEffects.Copy;
-
-
-
-            }
-            else
-            {
-                // Don't allow any other drop.
-                e.Effect = DragDropEffects.None;
-            }
-        }
-
-        private void Patchexe_DragEnter(object sender, DragEventArgs e)
-        {
-            // See if this is a copy and the data includes text.
-            if (e.Data.GetDataPresent(DataFormats.FileDrop) && (e.AllowedEffect & DragDropEffects.Copy) != 0)
-            {
-                //File Being Dropped
-                string[] CurrentFile = (string[])e.Data.GetData(DataFormats.FileDrop, false);
-                //Sets FullPath Path
-                CurrentExeFullPath = Path.GetFullPath(CurrentFile[0]);
-                //Sets FullName Path
-                CurrentExeFullName = Path.GetFileName(CurrentFile[0]);
 
                 e.Effect = DragDropEffects.Copy;
 
@@ -163,41 +128,41 @@ namespace HappyTool
         #region Networking/Patching
         private void VersionCheckAndPatch(string server)
         {
-            if (FileVersionInfo.GetVersionInfo(CurrentExeFullPath).FileVersion.Equals("0.3.0.0"))
+            if (FileVersionInfo.GetVersionInfo(CurrentFullPath).FileVersion.Equals("0.3.0.0"))
             {
 
-                if (Path.GetFileName(CurrentExeFullPath).Equals("HappyWars.exe") && !Path.GetExtension(CurrentExeFullPath).Equals("LauncherDll.dll"))
+                if (Path.GetFileName(CurrentFullPath).Equals("HappyWars.exe") && !Path.GetExtension(CurrentFullPath).Equals("LauncherDll.dll"))
                 {
                     patchAddress1 = 0x1002A50;
                     patchAddress2 = 0x1002AC8;
                     patchAddress3 = 0x1002B0C;
                     patchAddress4 = 0x1002B58;
-                    PatchServer(CurrentExeFullPath, 0x1002A50, Encoding.ASCII.GetBytes(server));
-                    PatchServer(CurrentExeFullPath, 0x1002AC8, Encoding.ASCII.GetBytes(server));
-                    PatchServer(CurrentExeFullPath, 0x1002B0C, Encoding.ASCII.GetBytes(server));
-                    PatchServer(CurrentExeFullPath, 0x1002B58, Encoding.ASCII.GetBytes(server));
+                    PatchServer(CurrentFullPath, 0x1002A50, Encoding.ASCII.GetBytes(server));
+                    PatchServer(CurrentFullPath, 0x1002AC8, Encoding.ASCII.GetBytes(server));
+                    PatchServer(CurrentFullPath, 0x1002B0C, Encoding.ASCII.GetBytes(server));
+                    PatchServer(CurrentFullPath, 0x1002B58, Encoding.ASCII.GetBytes(server));
                 }
-                else if (Path.GetExtension(CurrentExeFullPath).Equals("LauncherDll.dll"))
+                else if (Path.GetExtension(CurrentFullPath).Equals("LauncherDll.dll"))
                 {
                     MessageBox.Show("Must Drag Exe Not The Launcher.dll And Files Must Be named Like The Original");
                 }
             }
-            else if (!FileVersionInfo.GetVersionInfo(CurrentExeFullPath).FileVersion.Equals("0.3.0.0"))//patch dll instead if it is not 0.3.0
+            else if (!FileVersionInfo.GetVersionInfo(CurrentFullPath).FileVersion.Equals("0.3.0.0"))//patch dll instead if it is not 0.3.0
             {
-                if (FileVersionInfo.GetVersionInfo(CurrentExeFullPath).FileVersion.Equals("0.5.2.0"))//patch dll instead if it is not 0.3.0
+                if (FileVersionInfo.GetVersionInfo(CurrentFullPath).FileVersion.Equals("0.5.2.0"))//patch dll instead if it is not 0.3.0
                 {
-                    if (!Path.GetFileName(CurrentExeFullPath).Equals("HappyWars.exe") && Path.GetExtension(CurrentExeFullPath).Equals("LauncherDll.dll"))
+                    if (!Path.GetFileName(CurrentFullPath).Equals("HappyWars.exe") && Path.GetExtension(CurrentFullPath).Equals("LauncherDll.dll"))
                     {
                         patchAddress1 = 0x9CC0;
                         patchAddress2 = 0x9CF4;
                         patchAddress3 = 0x9D2C;
                         patchAddress4 = 0x9E38;
-                        PatchServer(CurrentExeFullPath, 0x9CC0, Encoding.ASCII.GetBytes(server));
-                        PatchServer(CurrentExeFullPath, 0x9CF4, Encoding.ASCII.GetBytes(server));
-                        PatchServer(CurrentExeFullPath, 0x9D2C, Encoding.ASCII.GetBytes(server));
-                        PatchServer(CurrentExeFullPath, 0x9E38, Encoding.ASCII.GetBytes(server));
+                        PatchServer(CurrentFullPath, 0x9CC0, Encoding.ASCII.GetBytes(server));
+                        PatchServer(CurrentFullPath, 0x9CF4, Encoding.ASCII.GetBytes(server));
+                        PatchServer(CurrentFullPath, 0x9D2C, Encoding.ASCII.GetBytes(server));
+                        PatchServer(CurrentFullPath, 0x9E38, Encoding.ASCII.GetBytes(server));
                     }
-                    else if (Path.GetFileName(CurrentExeFullPath).Equals("HappyWars.exe"))
+                    else if (Path.GetFileName(CurrentFullPath).Equals("HappyWars.exe"))
                     {
                         MessageBox.Show("Must Drag Dll Not The Happywars.exe And Files Must Be named Like The Original");
                     }
@@ -244,6 +209,7 @@ namespace HappyTool
                 context = _httpListener.GetContext();
                 context.Response.KeepAlive = false;
                 context.Response.Close();
+                string DataReturned;
                 DataReturned = string.Format("Client requested ( " + context.Request.RawUrl + " ) Status Code: " + context.Response.StatusCode + " " + Environment.NewLine,
 context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
                 FirstResponseHasHit = true;
@@ -277,29 +243,51 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
         //starts a local server
         private void StartServer_Click(object sender, EventArgs e)
         {
-            if (CheckIfPatchesAreMade(CurrentExeFullPath).Equals(true))
+            try
             {
-            if (_httpListener == null)
-            {
-                labelControl2.Text = "Starting server...";
-                _httpListener = new HttpListener();
-                _httpListener.Prefixes.Add(string.Concat(new string[] { "http://", "localhost:12345", "/" }));
-                _httpListener.Start();
-                labelControl2.Text = "Server started.";
-                _responseThread = new Thread(new ThreadStart(ResponseThread));
-                _responseThread.Start();
-            }
-            else
-            {
-                _httpListener = null;
-                _responseThread = null;
+                if (CheckIfPatchesAreMade(CurrentFullPath).Equals(true))
+                {
+                    if (_httpListener == null)
+                    {
+                        labelControl2.Text = "Starting server...";
+                        _httpListener = new HttpListener();
+                        _httpListener.Prefixes.Add(string.Concat(new string[] { "http://", "localhost:12345", "/" }));
+                        _httpListener.Start();
+                        labelControl2.Text = "Server started.";
+                        _responseThread = new Thread(new ThreadStart(ResponseThread));
+                        _responseThread.Start();
+                    }
+                    else
+                    {
+                        _httpListener = null;
+                        _responseThread = null;
 
-            }
+                    }
 
+                }
+                else
+                {
+                    MessageBox.Show("Must Patch File.");
+                }
             }
-            else
+            finally
             {
-                MessageBox.Show("Must Patch File.");
+                if (_httpListener == null)
+                {
+                    labelControl2.Text = "Starting server...";
+                    _httpListener = new HttpListener();
+                    _httpListener.Prefixes.Add(string.Concat(new string[] { "http://", "localhost:12345", "/" }));
+                    _httpListener.Start();
+                    labelControl2.Text = "Server started.";
+                    _responseThread = new Thread(new ThreadStart(ResponseThread));
+                    _responseThread.Start();
+                }
+                else
+                {
+                    _httpListener = null;
+                    _responseThread = null;
+
+                }
             }
 
         }
@@ -359,14 +347,14 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
 
         private void simpleButton2_Click(object sender, EventArgs e)
         {
-            if(!textEdit1.Text.Equals(string.Empty) && char.IsDigit(char.Parse(textEdit1.Text)))
+            if (!textEdit1.Text.Equals(string.Empty) && char.IsDigit(char.Parse(textEdit1.Text)))
             {
-                
+
                 TicketSum = int.Parse(textEdit1.Text);
             }
             else
             {
-               TicketSum = 0;
+                TicketSum = 0;
             }
 
         }
