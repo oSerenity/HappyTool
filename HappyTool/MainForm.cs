@@ -1,5 +1,6 @@
 ﻿using DevExpress.XtraEditors;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -43,7 +44,7 @@ namespace HappyTool
             try
             {
                 labelControl2.Text = "Stopping server...";
-                
+
                 if (_httpListener == null)
                 {
 
@@ -306,6 +307,155 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
                 TicketSum = 0;
             }
 
+        }
+
+        private void DecryptingFolder_Click(object sender, EventArgs e)
+        {
+            //Local instance of Folder Dialog 
+            FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+            //Shows if user wants to make a new folder.
+            folderBrowserDialog.ShowNewFolderButton = true;
+            //remmeber previous folder selection...
+            //folderBrowserDialog.SelectedPath = @"C:\Users\Serenity\Documents\Happy Wars Achrive\0.5.2.0\Data\";
+
+            //User clicked the correct project solution
+            //Shows ui.
+            if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
+            {
+
+                string Foldername = Path.GetFullPath(folderBrowserDialog.SelectedPath).Substring(folderBrowserDialog.SelectedPath.LastIndexOf(@"\") + 1);
+                //Checks all files in that Directory
+                foreach (string FIleSource in Directory.GetFiles(folderBrowserDialog.SelectedPath))
+                {
+                    byte[] Source = File.ReadAllBytes(FIleSource);
+                    FileInfo fileInfo = new FileInfo(FIleSource);
+                    string File_Extention = fileInfo.Extension;
+                    string FileName = FIleSource.Substring(FIleSource.LastIndexOf(@"\")).Replace(File_Extention, "");
+
+                    if (!Directory.Exists(Application.StartupPath + @"\" + Foldername + @"\"))
+                    {
+                        System.IO.Directory.CreateDirectory(Application.StartupPath + @"\" + Foldername + @"\");
+                    }
+                    byte[] decrypted = BFBR.Decrypt(Source, 0, Source.Length);
+
+                    byte[] decompressed = ZRES.Decompress(decrypted, 0, decrypted.Length);
+                    if (File_Extention == ".bres")
+                    {
+                        BRES bres = new BRES(decompressed, 0, decompressed.Length);
+
+                        if (!Directory.Exists(Application.StartupPath + @"\" + Foldername + @"\" + bres.Name))
+                        {
+                            System.IO.Directory.CreateDirectory(Application.StartupPath + @"\" + Foldername + @"\" + bres.Name);
+                        }
+                        File.WriteAllBytes(Application.StartupPath + @"\" + Foldername + @"\" + FileName + File_Extention, decompressed);
+
+                        foreach (var resource in bres.Resources)
+                        {
+                            File.WriteAllBytes(Application.StartupPath + @"\" + Foldername + @"\" + bres.Name + @"\" + resource.Name, resource.Content.GetArraySegment().ToArray());
+
+                        }
+                    }
+                    else
+                    {
+                        File.WriteAllBytes(Application.StartupPath + @"\" + Foldername + @"\" + FileName + File_Extention, decompressed);
+
+                    }
+
+
+                }
+
+
+                MessageBox.Show(Application.StartupPath + @"\" + Foldername + @"\" + "Done!");
+            }
+
+        }
+
+        private void XboxDecompressFolder_Click(object sender, EventArgs e)
+        {
+            //Local instance of Folder Dialog 
+            FolderBrowserDialog XboxDecompress = new FolderBrowserDialog();
+            //Shows if user wants to make a new folder.
+            XboxDecompress.ShowNewFolderButton = true;
+            //remmeber previous folder selection...
+            //XboxDecompress.SelectedPath = @"C:\Users\Serenity\Documents\Happy Wars Achrive\0.5.2.0\Data\";
+
+            //Shows ui.
+            if (XboxDecompress.ShowDialog() == DialogResult.OK)
+            {
+
+                string Foldername = Path.GetFullPath(XboxDecompress.SelectedPath).Substring(XboxDecompress.SelectedPath.LastIndexOf(@"\") + 1);
+                //Checks all files in that Directory
+                foreach (string FIleSource in Directory.GetFiles(XboxDecompress.SelectedPath))
+                {
+                    byte[] Source = File.ReadAllBytes(FIleSource);
+                    FileInfo fileInfo = new FileInfo(FIleSource);
+                    string File_Extention = fileInfo.Extension;
+                    string FileName = FIleSource.Substring(FIleSource.LastIndexOf(@"\")).Replace(File_Extention, "");
+
+                    if (!Directory.Exists(Application.StartupPath + @"\" + Foldername + @"\"))
+                    {
+                        Directory.CreateDirectory(Application.StartupPath + @"\" + Foldername + @"\");
+                    }
+                    byte[] decompressed = ZRES.Decompress(Source, 0, Source.Length);
+                    if (File_Extention == ".bres")
+                    {
+                        BRES bres = new BRES(decompressed, 0, decompressed.Length);
+
+                        if (!Directory.Exists(Application.StartupPath + @"\" + Foldername + @"\" + bres.Name))
+                        {
+                            Directory.CreateDirectory(Application.StartupPath + @"\" + Foldername + @"\" + bres.Name);
+                        }
+                        File.WriteAllBytes(Application.StartupPath + @"\" + Foldername + @"\" + FileName + File_Extention, decompressed);
+
+                        foreach (var resource in bres.Resources)
+                        {
+                            File.WriteAllBytes(Application.StartupPath + @"\" + Foldername + @"\" + bres.Name + @"\" + resource.Name, resource.Content.GetArraySegment().ToArray());
+
+                        }
+                    }
+                    else
+                    {
+                        File.WriteAllBytes(Application.StartupPath + @"\" + Foldername + @"\" + FileName + File_Extention, decompressed);
+
+                    }
+
+
+                }
+
+
+                MessageBox.Show(Application.StartupPath + @"\" + Foldername + @"\" + "Done!");
+            }
+        }
+
+        private void simpleButton5_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void FolderEncypt_Click(object sender, EventArgs e)
+        {
+            //Local instance of Folder Dialog 
+            FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+            //Shows if user wants to make a new folder.
+            folderBrowserDialog.ShowNewFolderButton = true;
+            //remmeber previous folder selection...
+            folderBrowserDialog.SelectedPath = @"C:\Users\Serenity\Documents\Happy Wars Achrive\0.5.2.0\Data\";
+
+            //User clicked the correct project solution
+            //Shows ui.
+            if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
+            {
+
+                string Foldername = Path.GetFullPath(folderBrowserDialog.SelectedPath).Substring(folderBrowserDialog.SelectedPath.LastIndexOf(@"\") + 1);
+                byte[] Source = File.ReadAllBytes(@"C:\Users\Serenity\Documents\Happy Wars Achrive\0.5.2.0\Data\Test\cam_COOP_Massive.bres");
+                string FileName = "cam_COOP_Massive";
+                byte[] decrypted = BFBR.Decrypt(Source, 0, Source.Length);
+                byte[] decompressed = ZRES.Decompress(decrypted, 0, decrypted.Length);
+                BRES bres = new BRES(decompressed, 0, decompressed.Length);
+
+
+                MessageBox.Show(Application.StartupPath + @"\" + Foldername + @"\" + "Done!");
+            }
         }
     }
 }

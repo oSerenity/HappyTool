@@ -43,13 +43,15 @@ namespace HappyTool
             this.labelControl1 = new DevExpress.XtraEditors.LabelControl();
             this.simpleButton1 = new DevExpress.XtraEditors.SimpleButton();
             this.xtraTabPage1 = new DevExpress.XtraTab.XtraTabPage();
+            this.simpleButton5 = new DevExpress.XtraEditors.SimpleButton();
+            this.simpleButton6 = new DevExpress.XtraEditors.SimpleButton();
             this.groupControl2 = new DevExpress.XtraEditors.GroupControl();
             this.groupControl1 = new DevExpress.XtraEditors.GroupControl();
             this.xtraTabPage2 = new DevExpress.XtraTab.XtraTabPage();
+            this.simpleButton3 = new DevExpress.XtraEditors.SimpleButton();
+            this.simpleButton4 = new DevExpress.XtraEditors.SimpleButton();
             this.groupControl3 = new DevExpress.XtraEditors.GroupControl();
             this.groupControl4 = new DevExpress.XtraEditors.GroupControl();
-            this.folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
-            this.simpleButton3 = new DevExpress.XtraEditors.SimpleButton();
             ((System.ComponentModel.ISupportInitialize)(this.xtraTabControl1)).BeginInit();
             this.xtraTabControl1.SuspendLayout();
             this.xtraTabPage3.SuspendLayout();
@@ -169,19 +171,39 @@ namespace HappyTool
             // 
             // xtraTabPage1
             // 
+            this.xtraTabPage1.Controls.Add(this.simpleButton5);
+            this.xtraTabPage1.Controls.Add(this.simpleButton6);
             this.xtraTabPage1.Controls.Add(this.groupControl2);
             this.xtraTabPage1.Controls.Add(this.groupControl1);
             this.xtraTabPage1.Name = "xtraTabPage1";
             this.xtraTabPage1.Size = new System.Drawing.Size(510, 127);
             this.xtraTabPage1.Text = "Xbox Files";
             // 
+            // simpleButton5
+            // 
+            this.simpleButton5.Location = new System.Drawing.Point(134, 7);
+            this.simpleButton5.Name = "simpleButton5";
+            this.simpleButton5.Size = new System.Drawing.Size(124, 23);
+            this.simpleButton5.TabIndex = 19;
+            this.simpleButton5.Text = "Folder Compress";
+            this.simpleButton5.Click += new System.EventHandler(this.simpleButton5_Click);
+            // 
+            // simpleButton6
+            // 
+            this.simpleButton6.Location = new System.Drawing.Point(11, 7);
+            this.simpleButton6.Name = "simpleButton6";
+            this.simpleButton6.Size = new System.Drawing.Size(117, 23);
+            this.simpleButton6.TabIndex = 18;
+            this.simpleButton6.Text = "Folder Decompress";
+            this.simpleButton6.Click += new System.EventHandler(this.XboxDecompressFolder_Click);
+            // 
             // groupControl2
             // 
             this.groupControl2.AllowDrop = true;
             this.groupControl2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupControl2.Location = new System.Drawing.Point(280, 7);
+            this.groupControl2.Location = new System.Drawing.Point(134, 36);
             this.groupControl2.Name = "groupControl2";
-            this.groupControl2.Size = new System.Drawing.Size(219, 113);
+            this.groupControl2.Size = new System.Drawing.Size(124, 84);
             this.groupControl2.TabIndex = 13;
             this.groupControl2.Text = "Decompress";
             // 
@@ -189,48 +211,59 @@ namespace HappyTool
             // 
             this.groupControl1.AllowDrop = true;
             this.groupControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupControl1.Location = new System.Drawing.Point(11, 7);
+            this.groupControl1.Location = new System.Drawing.Point(11, 36);
             this.groupControl1.Name = "groupControl1";
-            this.groupControl1.Size = new System.Drawing.Size(219, 113);
+            this.groupControl1.Size = new System.Drawing.Size(117, 84);
             this.groupControl1.TabIndex = 12;
             this.groupControl1.Text = "Compress";
             // 
             // xtraTabPage2
             // 
             this.xtraTabPage2.Controls.Add(this.simpleButton3);
+            this.xtraTabPage2.Controls.Add(this.simpleButton4);
             this.xtraTabPage2.Controls.Add(this.groupControl3);
             this.xtraTabPage2.Controls.Add(this.groupControl4);
             this.xtraTabPage2.Name = "xtraTabPage2";
             this.xtraTabPage2.Size = new System.Drawing.Size(510, 127);
             this.xtraTabPage2.Text = "Steam Files";
             // 
+            // simpleButton3
+            // 
+            this.simpleButton3.Location = new System.Drawing.Point(134, 7);
+            this.simpleButton3.Name = "simpleButton3";
+            this.simpleButton3.Size = new System.Drawing.Size(124, 23);
+            this.simpleButton3.TabIndex = 23;
+            this.simpleButton3.Text = "Folder Encrypt";
+            this.simpleButton3.Click += new System.EventHandler(this.FolderEncypt_Click);
+            // 
+            // simpleButton4
+            // 
+            this.simpleButton4.Location = new System.Drawing.Point(11, 7);
+            this.simpleButton4.Name = "simpleButton4";
+            this.simpleButton4.Size = new System.Drawing.Size(117, 23);
+            this.simpleButton4.TabIndex = 22;
+            this.simpleButton4.Text = "Folder Decrypt";
+            this.simpleButton4.Click += new System.EventHandler(this.DecryptingFolder_Click);
+            // 
             // groupControl3
             // 
             this.groupControl3.AllowDrop = true;
             this.groupControl3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupControl3.Location = new System.Drawing.Point(365, 46);
+            this.groupControl3.Location = new System.Drawing.Point(134, 36);
             this.groupControl3.Name = "groupControl3";
-            this.groupControl3.Size = new System.Drawing.Size(134, 74);
-            this.groupControl3.TabIndex = 15;
-            this.groupControl3.Text = "Decrypt";
+            this.groupControl3.Size = new System.Drawing.Size(124, 84);
+            this.groupControl3.TabIndex = 21;
+            this.groupControl3.Text = "Decompress";
             // 
             // groupControl4
             // 
             this.groupControl4.AllowDrop = true;
             this.groupControl4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupControl4.Location = new System.Drawing.Point(365, 7);
+            this.groupControl4.Location = new System.Drawing.Point(11, 36);
             this.groupControl4.Name = "groupControl4";
-            this.groupControl4.Size = new System.Drawing.Size(134, 42);
-            this.groupControl4.TabIndex = 14;
-            this.groupControl4.Text = "Encrypt";
-            // 
-            // simpleButton3
-            // 
-            this.simpleButton3.Location = new System.Drawing.Point(11, 7);
-            this.simpleButton3.Name = "simpleButton3";
-            this.simpleButton3.Size = new System.Drawing.Size(94, 23);
-            this.simpleButton3.TabIndex = 16;
-            this.simpleButton3.Text = "simpleButton3";
+            this.groupControl4.Size = new System.Drawing.Size(117, 84);
+            this.groupControl4.TabIndex = 20;
+            this.groupControl4.Text = "Compress";
             // 
             // MainForm
             // 
@@ -275,10 +308,12 @@ namespace HappyTool
         private DevExpress.XtraEditors.GroupControl groupControl2;
         private DevExpress.XtraEditors.GroupControl groupControl1;
         private DevExpress.XtraTab.XtraTabPage xtraTabPage2;
+        private DevExpress.XtraEditors.SimpleButton simpleButton5;
+        private DevExpress.XtraEditors.SimpleButton simpleButton6;
+        private DevExpress.XtraEditors.SimpleButton simpleButton3;
+        private DevExpress.XtraEditors.SimpleButton simpleButton4;
         private DevExpress.XtraEditors.GroupControl groupControl3;
         private DevExpress.XtraEditors.GroupControl groupControl4;
-        private DevExpress.XtraEditors.SimpleButton simpleButton3;
-        private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog;
     }
 }
 
