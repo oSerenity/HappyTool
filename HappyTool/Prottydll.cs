@@ -728,7 +728,7 @@ namespace HappyTool
                 throw new InvalidDataException("Invalid FILE name property");
 
             string cmd = null;
-            if (Endianess.IsHeader("PSTR", BitConverter.ToUInt32(chunk.Array, chunk.Offset)))
+            if (Endianess.IsHeader("PS  ", BitConverter.ToUInt32(chunk.Array, chunk.Offset)))
             {
                 cmd = ReadStringProperty(ref chunk, "cmd");
                 if (string.IsNullOrEmpty(cmd))
@@ -768,7 +768,7 @@ namespace HappyTool
 
         private uint ReadIntProperty(ref ArraySegment<byte> input, string property)
         {
-            var payload = ReadProperty(ref input, "PINT", property);
+            var payload = ReadProperty(ref input, "PI  ", property);
             if (payload.Count < 4)
                 throw new InvalidDataException($"Invalid int property bytes size: {payload.Count}");
 
@@ -778,11 +778,11 @@ namespace HappyTool
 
         private string ReadStringProperty(ref ArraySegment<byte> input, string property)
         {
-            var payload = ReadProperty(ref input, "PSTR", property);
+            var payload = ReadProperty(ref input, "PS  ", property);
             if (payload.Count == 0)
                 throw new InvalidDataException($"Invalid string property value size");
 
-            var nullTerminator = Array.IndexOf(payload.Array, (byte)0x00, payload.Offset, payload.Count);
+            var nullTerminator = Array.IndexOf(payload.Array, (byte)0x00, payload.Offset, payload.Count) - payload.Offset;
             if (nullTerminator <= 0)
                 throw new InvalidDataException($"Invalid string property value terminator");
 
@@ -795,7 +795,8 @@ namespace HappyTool
             if (chunk.Count == 0)
                 throw new InvalidDataException($"Invalid {property} chunk size");
 
-            var nullTerminator = Array.IndexOf(chunk.Array, (byte)0x00, chunk.Offset, chunk.Count);
+            var nullTerminator = Array.IndexOf(chunk.Array, (byte)0x00, chunk.Offset, chunk.Count) - chunk.Offset;
+
             if (nullTerminator <= 0)
                 throw new InvalidDataException($"Invalid property name string");
 
@@ -806,8 +807,7 @@ namespace HappyTool
 
             }
 
-            var payload = new ArraySegment<byte>(chunk.Array, chunk.Offset + nullTerminator + 1, chunk.Count - nullTerminator - 1);
-            return payload;
+            return new ArraySegment<byte>(chunk.Array, chunk.Offset + nullTerminator + 1, chunk.Count - nullTerminator - 1);
         }
 
         private ArraySegment<byte> ReadChunk(ref ArraySegment<byte> input, string header)

@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -322,109 +323,150 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
             //Shows ui.
             if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
             {
-
-                string Foldername = Path.GetFullPath(folderBrowserDialog.SelectedPath).Substring(folderBrowserDialog.SelectedPath.LastIndexOf(@"\") + 1);
-                //Checks all files in that Directory
-                foreach (string FIleSource in Directory.GetFiles(folderBrowserDialog.SelectedPath))
+                DirectoryInfo directory = new DirectoryInfo(folderBrowserDialog.SelectedPath);
+                if (!Directory.Exists(Application.StartupPath + @"\" + directory.Name + @"\"))
                 {
-                    byte[] Source = File.ReadAllBytes(FIleSource);
-                    FileInfo fileInfo = new FileInfo(FIleSource);
-                    string File_Extention = fileInfo.Extension;
-                    string FileName = FIleSource.Substring(FIleSource.LastIndexOf(@"\")).Replace(File_Extention, "");
+                    System.IO.Directory.CreateDirectory(Application.StartupPath + @"\" + directory.Name + @"\");
+                }
 
-                    if (!Directory.Exists(Application.StartupPath + @"\" + Foldername + @"\"))
+                foreach (string Files in Folders(directory.FullName))
+                {
+                    DirectoryInfo NameOfFolder = new DirectoryInfo(Files);
+                    if (!NameOfFolder.Name.Equals("audio"))
                     {
-                        System.IO.Directory.CreateDirectory(Application.StartupPath + @"\" + Foldername + @"\");
-                    }
-                    byte[] decrypted = BFBR.Decrypt(Source, 0, Source.Length);
-
-                    byte[] decompressed = ZRES.Decompress(decrypted, 0, decrypted.Length);
-                    if (File_Extention == ".bres")
-                    {
-                        BRES bres = new BRES(decompressed, 0, decompressed.Length);
-
-                        if (!Directory.Exists(Application.StartupPath + @"\" + Foldername + @"\" + bres.Name))
-                        {
-                            System.IO.Directory.CreateDirectory(Application.StartupPath + @"\" + Foldername + @"\" + bres.Name);
-                        }
-                        File.WriteAllBytes(Application.StartupPath + @"\" + Foldername + @"\" + FileName + File_Extention, decompressed);
-
-                        foreach (var resource in bres.Resources)
-                        {
-                            File.WriteAllBytes(Application.StartupPath + @"\" + Foldername + @"\" + bres.Name + @"\" + resource.Name, resource.Content.GetArraySegment().ToArray());
-
-                        }
-                    }
-                    else
-                    {
-                        File.WriteAllBytes(Application.StartupPath + @"\" + Foldername + @"\" + FileName + File_Extention, decompressed);
-
+                        GetDirectoryFiles(Files, NameOfFolder.Name);
                     }
 
 
                 }
+                //checks if parent folder has any folders
+                if (IsDirectoryEmpty(directory.FullName) == false)
+                {
+                    GetDirectoryFiles(directory.FullName, directory.Name);
+                }
+                else
+                {
+                    foreach (string Files in Folders(directory.FullName))
+                    {
+                        GetDirectoryFiles(Files, directory.Name);
+                    }
+                }
 
-
-                MessageBox.Show(Application.StartupPath + @"\" + Foldername + @"\" + "Done!");
+                MessageBox.Show(Application.StartupPath + @"\" + directory.Name + @"\" + "Done!");
             }
 
+        }
+        public static bool IsDirectoryEmpty(string path)
+        {
+            return !Directory.EnumerateFileSystemEntries(path).Any();
+        }
+        /// <summary>
+        /// Gets all Folders From Parent Directory.
+        /// </summary>
+        /// <param name="Path"></param>
+        /// <returns></returns>
+        private static string[] Folders(string Path)
+        {
+            List<string> folders = new List<string>();
+            string FolderName = Path.Substring(Path.LastIndexOf(@"\"));
+            foreach (string DataFolders in Directory.GetDirectories(Path))
+            {
+                
+                if (!Directory.Exists(Application.StartupPath + @"\" + FolderName + @"\" + DataFolders.Substring(DataFolders.LastIndexOf(@"\")) + @"\"))
+                {
+                    
+                    Directory.CreateDirectory(Application.StartupPath + @"\" + FolderName + @"\" + DataFolders.Substring(DataFolders.LastIndexOf(@"\")) + @"\");
+                }
+                if(!IsDirectoryEmpty(DataFolders))
+                {
+                    folders.Add(DataFolders);
+                }
+                if(!DataFolders.Equals(""))
+                {
+                    foreach (string subFolders in Directory.GetDirectories(DataFolders))
+                    {
+                        folders.Add(subFolders);
+                        string SubFolderName = DataFolders.Substring(DataFolders.LastIndexOf(@"\"));
+                        if (!Directory.Exists(Application.StartupPath + @"\" + FolderName + @"\" + SubFolderName + subFolders.Substring(subFolders.LastIndexOf(@"\")) + @"\"))
+                        {
+
+                            Directory.CreateDirectory(Application.StartupPath + @"\" + FolderName + @"\" + SubFolderName + subFolders.Substring(subFolders.LastIndexOf(@"\")) + @"\");
+                        }
+                    }
+                }
+                
+
+            }
+
+                return folders.ToArray();
+        }
+
+        private static void GetDirectoryFiles(string Path, string Foldername)
+        {
+            
+            foreach (string FIles in Directory.GetFiles(Path))
+            {
+                byte[] Source = File.ReadAllBytes(FIles);
+                FileInfo fileInfo = new FileInfo(FIles);
+                string File_Extention = fileInfo.Extension;
+
+
+                if(File_Extention == ".zson")
+                {
+                    goto skipfile;
+                }
+                if (File_Extention == "")
+                {
+                    goto skipfile;
+                }
+                else
+                {
+
+                    if (File_Extention == ".bres")
+                    {
+                        byte[] decrypted = BFBR.Decrypt(Source, 0, Source.Length);
+
+                        byte[] decompressed = ZRES.Decompress(decrypted, 0, decrypted.Length);
+                        System.Threading.Tasks.Task.Run(() =>
+                        {
+                            BRES bres = new BRES(decompressed, 0, decompressed.Length);
+                            if (!Directory.Exists(Application.StartupPath + @"\Data\" + @"\" + Foldername + @"\" + bres.Name))
+                            {
+                                System.IO.Directory.CreateDirectory(Application.StartupPath + @"\Data\" + @"\" + Foldername + @"\" + bres.Name);
+                            }
+                            foreach (var resource in bres.Resources)
+                            {
+                                Regex pattern = new Regex("[\\<\\>\\:\\\" \\/\\|\\? \\*]");
+                                File.WriteAllBytes(Application.StartupPath + @"\Data\" + @"\" + Foldername + @"\" + bres.Name + @"\" + pattern.Replace(resource.Name, "_"), resource.Content.GetArraySegment().ToArray());
+
+                            }
+                        });
+                    }
+                    if (File_Extention == ".zson")
+                    {
+                        byte[] decompressed = ZRES.Decompress(Source, 0, Source.Length);
+
+                        string json = fileInfo.Directory.FullName.Substring(fileInfo.Directory.FullName.LastIndexOf(@"\Data\"));
+                        File.WriteAllBytes(Application.StartupPath + json + @"\" + FIles.Substring(FIles.LastIndexOf(@"\")).Replace(File_Extention, "") + File_Extention, decompressed);
+                    }
+                    else
+                    {
+                        byte[] decrypted = BFBR.Decrypt(Source, 0, Source.Length);
+
+                        byte[] decompressed = ZRES.Decompress(decrypted, 0, decrypted.Length);
+                        //if()
+                        string json = fileInfo.Directory.FullName.Substring(fileInfo.Directory.FullName.LastIndexOf(@"\Data\"));
+                        File.WriteAllBytes(Application.StartupPath + json + @"\" + FIles.Substring(FIles.LastIndexOf(@"\")).Replace(File_Extention, "") + File_Extention, decompressed);
+                    }
+                }
+
+            skipfile:;
+
+            }
         }
 
         private void XboxDecompressFolder_Click(object sender, EventArgs e)
         {
-            //Local instance of Folder Dialog 
-            FolderBrowserDialog XboxDecompress = new FolderBrowserDialog();
-            //Shows if user wants to make a new folder.
-            XboxDecompress.ShowNewFolderButton = true;
-            //remmeber previous folder selection...
-            //XboxDecompress.SelectedPath = @"C:\Users\Serenity\Documents\Happy Wars Achrive\0.5.2.0\Data\";
-
-            //Shows ui.
-            if (XboxDecompress.ShowDialog() == DialogResult.OK)
-            {
-
-                string Foldername = Path.GetFullPath(XboxDecompress.SelectedPath).Substring(XboxDecompress.SelectedPath.LastIndexOf(@"\") + 1);
-                //Checks all files in that Directory
-                foreach (string FIleSource in Directory.GetFiles(XboxDecompress.SelectedPath))
-                {
-                    byte[] Source = File.ReadAllBytes(FIleSource);
-                    FileInfo fileInfo = new FileInfo(FIleSource);
-                    string File_Extention = fileInfo.Extension;
-                    string FileName = FIleSource.Substring(FIleSource.LastIndexOf(@"\")).Replace(File_Extention, "");
-
-                    if (!Directory.Exists(Application.StartupPath + @"\" + Foldername + @"\"))
-                    {
-                        Directory.CreateDirectory(Application.StartupPath + @"\" + Foldername + @"\");
-                    }
-                    byte[] decompressed = ZRES.Decompress(Source, 0, Source.Length);
-                    if (File_Extention == ".bres")
-                    {
-                        BRES bres = new BRES(decompressed, 0, decompressed.Length);
-
-                        if (!Directory.Exists(Application.StartupPath + @"\" + Foldername + @"\" + bres.Name))
-                        {
-                            Directory.CreateDirectory(Application.StartupPath + @"\" + Foldername + @"\" + bres.Name);
-                        }
-                        File.WriteAllBytes(Application.StartupPath + @"\" + Foldername + @"\" + FileName + File_Extention, decompressed);
-
-                        foreach (var resource in bres.Resources)
-                        {
-                            File.WriteAllBytes(Application.StartupPath + @"\" + Foldername + @"\" + bres.Name + @"\" + resource.Name, resource.Content.GetArraySegment().ToArray());
-
-                        }
-                    }
-                    else
-                    {
-                        File.WriteAllBytes(Application.StartupPath + @"\" + Foldername + @"\" + FileName + File_Extention, decompressed);
-
-                    }
-
-
-                }
-
-
-                MessageBox.Show(Application.StartupPath + @"\" + Foldername + @"\" + "Done!");
-            }
         }
 
         private void simpleButton5_Click(object sender, EventArgs e)
@@ -448,7 +490,6 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
 
                 string Foldername = Path.GetFullPath(folderBrowserDialog.SelectedPath).Substring(folderBrowserDialog.SelectedPath.LastIndexOf(@"\") + 1);
                 byte[] Source = File.ReadAllBytes(@"C:\Users\Serenity\Documents\Happy Wars Achrive\0.5.2.0\Data\Test\cam_COOP_Massive.bres");
-                string FileName = "cam_COOP_Massive";
                 byte[] decrypted = BFBR.Decrypt(Source, 0, Source.Length);
                 byte[] decompressed = ZRES.Decompress(decrypted, 0, decrypted.Length);
                 BRES bres = new BRES(decompressed, 0, decompressed.Length);
