@@ -606,6 +606,10 @@ namespace HappyTool
         }
 
         public BRES(Stream input) => ReadBundledResource(input);
+        public BRES()
+        {
+
+        }
         public BRES(byte[] input, int start, int length)
         {
             using (var stream = new MemoryStream(input, start, length))

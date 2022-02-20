@@ -317,60 +317,60 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
 
         public void LoadDirectory(string Dir)
         {
-            DirectoryInfo di = new DirectoryInfo(Dir);
-
             foreach (string s in Directory.GetDirectories(Dir, "**", SearchOption.AllDirectories))
             {
-                string folders = "";
-
-                if (FileType == "Steam" && Decrypt == true)
+                string folders = string.Empty;
+                switch(Decrypt)
                 {
-                    folders = s.Substring(s.LastIndexOf("\\Data\\")).ToLower();
-                    if (!Directory.Exists(Application.StartupPath + @"\" + @"Steam Files\" + folders))
-                    {
+                    case true:
+                        folders = s.Substring(s.LastIndexOf("\\Data\\")).ToLower();
+                        if (!Directory.Exists(Application.StartupPath + @"\" + @"Steam Files\" + folders))
+                        {
 
-                        Directory.CreateDirectory(Application.StartupPath + @"\" + @"Steam Files\" + folders);
-                    }
+                            Directory.CreateDirectory(Application.StartupPath + @"\" + @"Steam Files\" + folders);
+                        }
+                        break;
+                        case false:
+                        folders = s.Substring(s.LastIndexOf("\\Data\\")).ToLower();
+
+                        break;
                 }
-                if (FileType == "Steam" && Decrypt == false)
+                switch(Decompress)
                 {
-                    folders = s.Substring(s.LastIndexOf("\\Data\\")).ToLower();
+                    case true:
+                        folders = s.Substring(s.LastIndexOf("\\media\\")).ToLower();
+                        if (!Directory.Exists(Application.StartupPath + @"\Xbox Files" + folders))
+                        {
 
+                            Directory.CreateDirectory(Application.StartupPath + @"\Xbox Files" + folders);
+                        }
+                        break;
+                    case false:
+                        folders = s.Substring(s.LastIndexOf("\\media\\")).ToLower();
+                        break;
                 }
-                if (FileType == "Xbox" && Decompress == true)
-                {
-                    folders = s.Substring(s.LastIndexOf("\\media\\")).ToLower();
-                    if (!Directory.Exists(Application.StartupPath + @"\Xbox Files" + folders))
-                    {
-
-                        Directory.CreateDirectory(Application.StartupPath + @"\Xbox Files" + folders);
-                    }
-                }
-                if (FileType == "Xbox" && Decompress == false)
-                {
-                    folders = s.Substring(s.LastIndexOf("\\media\\")).ToLower();
-                }
-
             }
 
             foreach (string result in Directory.GetFiles(Dir, "*.*", SearchOption.AllDirectories))
             {
                 DirectoryInfo dr = new DirectoryInfo(result);
-                if (FileType == "Steam" && Decrypt == true)
+                switch (Decrypt)
                 {
-                    DecryptAndUncompress(dr.FullName);
+                    case true:
+                        DecryptAndUncompress(dr.FullName);
+                        break;
+                    case false:
+                        CompressAndEncrypt(dr.FullName);
+                        break;
                 }
-                if (FileType == "Steam" && Decrypt == false)
+                switch (Decompress)
                 {
-                    CompressAndEncrypt(dr.FullName);
-                }
-                if (FileType == "Xbox" && Decompress == true)
-                {
-                    Uncompress(dr.FullName);
-                }
-                if (FileType == "Xbox" && Decompress == false)
-                {
-                    Compress(dr.FullName);
+                    case true:
+                        Uncompress(dr.FullName);
+                        break;
+                    case false:
+                        Compress(dr.FullName);
+                        break;
                 }
             }
             MessageBox.Show("Done Writing Data...\n\rFor " + FileType);
@@ -378,22 +378,60 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
 
         private void Compress(string fullName)
         {
-            throw new NotImplementedException();
+            BRES.Resource[] array = new BRES.Resource[]
+            {
+                new BRES.Resource()
+                {
+                Name = "CM:mission.json",
+                Command = "campaign",
+                Content = new BRES.DataSource( File.ReadAllBytes(@"C:\Users\Serenity\Documents\GitHub\HappyTool\HappyTool\bin\Debug\Steam Files\data\campaign\default\cam_COOP_Massive\CM_mission.json"))
+                },
+                new BRES.Resource()
+                {
+                Name = "CM:mission.nut",
+                Command = "campaign",
+                Content = new BRES.DataSource( File.ReadAllBytes(@"C:\Users\Serenity\Documents\GitHub\HappyTool\HappyTool\bin\Debug\Steam Files\data\campaign\default\cam_COOP_Massive\CM_mission00.nut"))
+                }
+            };
+            BRES s = new BRES()
+            {
+                Name = "cam_COOP_Massive",
+                Platform = BRES.GamePlatform.Xbox360,
+                Resources = array
+            };
+            File.WriteAllBytes(@"C:\Users\Serenity\Documents\cam_COOP_Massive.bres", s.ToArray());
         }
 
         private void CompressAndEncrypt(string fullName)
         {
-            throw new NotImplementedException();
+            BRES.Resource[] array = new BRES.Resource[]
+{
+                new BRES.Resource()
+                {
+                Name = "CM:mission.json",
+                Command = "campaign",
+                Content = new BRES.DataSource( File.ReadAllBytes(@"C:\Users\Serenity\Documents\GitHub\HappyTool\HappyTool\bin\Debug\Steam Files\data\campaign\default\cam_COOP_Massive\CM_mission.json"))
+                },
+                new BRES.Resource()
+                {
+                Name = "CM:mission.nut",
+                Command = "campaign",
+                Content = new BRES.DataSource( File.ReadAllBytes(@"C:\Users\Serenity\Documents\GitHub\HappyTool\HappyTool\bin\Debug\Steam Files\data\campaign\default\cam_COOP_Massive\CM_mission00.nut"))
+                }
+};
+            BRES s = new BRES()
+            {
+                Name = "cam_COOP_Massive",
+                Platform = BRES.GamePlatform.Steam,
+                Resources = array
+            };
+            File.WriteAllBytes(@"C:\Users\Serenity\Documents\cam_COOP_Massive.bres", s.ToArray());
         }
 
         private void Uncompress(string Path)
         {
             byte[] Source = File.ReadAllBytes(Path);
-            FileInfo fileInfo = new FileInfo(Path);
-            if (fileInfo.Extension != string.Empty)
-            {
-
-                switch (fileInfo.Extension)
+                switch (new FileInfo(Path).Extension)
                 {
                     case ".bres":
 
@@ -430,16 +468,12 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
                         File.WriteAllBytes(Application.StartupPath + @"\" + @"Xbox Files\" + Path.Substring(Path.LastIndexOf("\\media\\")), decompressed5);
                         break;
                 }
-            }
         }
 
         private void DecryptAndUncompress(string Path)
         {
             byte[] Source = File.ReadAllBytes(Path);
-            FileInfo fileInfo = new FileInfo(Path);
-            if (fileInfo.Extension != string.Empty)
-            {
-                switch (fileInfo.Extension)
+                switch (new FileInfo(Path).Extension)
                 {
                     case ".bres":
                         decrypted = BFBR.Decrypt(Source, 0, Source.Length);
@@ -457,6 +491,7 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
                                 }
                                 File.WriteAllBytes(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")).Replace(".bres", "") + @"\" + new Regex("[\\<\\>\\:\\\" \\/\\|\\? \\*]").Replace(resource.Name, "_"), resource.Content.GetArraySegment().ToArray());
 
+                                File.WriteAllBytes(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")).Replace(".bres", "") + @"\" + new Regex("[\\<\\>\\:\\\" \\/\\|\\? \\*]").Replace(resource.Name + "_Data", "_"), Encoding.Default.GetBytes(resource.Command + "\n" + resource.Name +"\n" + bres.Name));
                             }
                         });
                         break;
@@ -476,27 +511,9 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
                         File.WriteAllBytes(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")), ZRES.Decompress(decrypted, 0, decrypted.Length));
                         break;
                 }
-            }
         }
 
-        private void FolderDecrypt(object sender, EventArgs e)
-        {
-            FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
-            DialogResult drResult = folderBrowserDialog1.ShowDialog();
-            if (drResult == DialogResult.OK)
-            {
-                if (folderBrowserDialog1.SelectedPath.EndsWith(@"\Data"))
-                {
-                    Decrypt = true;
-                    LoadDirectory(folderBrowserDialog1.SelectedPath);
-                }
-                else
-                {
-                    MessageBox.Show("Select Data Directory!!");
 
-                }
-            }
-        }
 
         private void xtraTabControl1_Selected(object sender, DevExpress.XtraTab.TabPageEventArgs e)
         {
@@ -510,45 +527,74 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
             }
         }
 
-        private void DecompressFolder(object sender, EventArgs e)
+        private void FolderOptions(object sender, EventArgs e)
         {
             FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
-            DialogResult drResult = folderBrowserDialog1.ShowDialog();
-            if (drResult == DialogResult.OK)
-            {
-                if (folderBrowserDialog1.SelectedPath.EndsWith(@"\media"))
-                {
-                    Decompress = true;
-                    LoadDirectory(folderBrowserDialog1.SelectedPath);
-                }
-                else
-                {
-                    MessageBox.Show("Select Data Directory!!");
 
-                }
+            switch(FileType)
+            {
+                case "Xbox":
+                    if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
+                    {
+                        if (folderBrowserDialog1.SelectedPath.EndsWith(@"\media"))
+                        {
+                            Decompress = true;
+                            LoadDirectory(folderBrowserDialog1.SelectedPath);
+                        }
+                        else
+                        {
+                            MessageBox.Show("Select Data Directory!!");
+
+                        }
+                    }
+                    break;
+                case "Steam":
+                    if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
+                    {
+                        if (folderBrowserDialog1.SelectedPath.EndsWith(@"\Data"))
+                        {
+                            Decrypt = true;
+                            LoadDirectory(folderBrowserDialog1.SelectedPath);
+                        }
+                        else
+                        {
+                            MessageBox.Show("Select Data Directory!!");
+
+                        }
+                    }
+                    break;
             }
+
         }
 
-        private void EncryptFolder(object sender, EventArgs e)
-        {
-            MessageBox.Show("Select Game Data Folder....");
-            FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
-            DialogResult drResult = folderBrowserDialog1.ShowDialog();
-            if (drResult == DialogResult.OK)
-            {
-                Decrypt = false;
-                LoadDirectory(folderBrowserDialog1.SelectedPath);
-            }
-        }
 
-        private void CompressFolder(object sender, EventArgs e)
+        private void FolderOptions2(object sender, EventArgs e)
         {
-            MessageBox.Show("Select Game Media Folder....");
-            FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
-            DialogResult drResult = folderBrowserDialog1.ShowDialog();
-            if (drResult == DialogResult.OK)
+            switch (FileType)
             {
-                Decompress = false;
+                case "Xbox":
+                    if (Directory.Exists(Application.StartupPath + @"\Xbox Files\media"))
+                    {
+                        Decompress = false;
+                        LoadDirectory(Application.StartupPath + @"\Xbox Files\media");
+                    }
+                    else
+                    {
+                        MessageBox.Show(Application.StartupPath + @"\Xbox Files\media" + "\nwas Not Found!");
+                    }
+                    break;
+
+                case "Steam":
+                    if(Directory.Exists(Application.StartupPath + @"\Steam Files\data"))
+                    {
+                        Decrypt = false;
+                        LoadDirectory(Application.StartupPath + @"\Steam Files\data");
+                    }
+                    else
+                    {
+                        MessageBox.Show(Application.StartupPath + @"\Steam Files\data" + "\nwas Not Found!");
+                    }
+                    break;
             }
         }
         #endregion
