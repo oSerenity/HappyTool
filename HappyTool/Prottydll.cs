@@ -639,12 +639,13 @@ namespace HappyTool
             ));
 
             internal uint GetUInt32(uint x) => IsLittleEndian ? x : SwapUInt32(x);
-            internal static uint SwapUInt32(uint x) => (uint)(
-                ((x & (0xff << 0)) << 24) |
-                ((x & (0xff << 8)) << 16) |
-                ((x & (0xff << 16)) << 8) |
-                ((x & (0xff << 24)) << 0)
-            );
+            internal static uint SwapUInt32(uint x)
+            {
+                // swap adjacent 16-bit blocks
+                x = (x >> 16) | (x << 16);
+                // swap adjacent 8-bit blocks
+                return ((x & 0xFF00FF00) >> 8) | ((x & 0x00FF00FF) << 8);
+            }
         }
 
         private void ReadBundledResource(Stream input)
@@ -656,11 +657,18 @@ namespace HappyTool
 
                 var header = reader.ReadUInt32();
                 if (littleEndian.IsHeader("BRES", header))
+                {
                     Endianess = littleEndian;
+                }
                 else if (bigEndian.IsHeader("BRES", header))
+                {
                     Endianess = bigEndian;
+
+                }
                 else
+                {
                     throw new InvalidHeaderException("Expected BRES header");
+                }
 
                 var size = Endianess.GetUInt32(reader.ReadUInt32()) - unchecked((uint)int.MinValue);
                 if (size <= 0 || size % 4 != 0)
@@ -817,6 +825,7 @@ namespace HappyTool
                 throw new InvalidDataException($"Invalid chunk header 0x{chunkHeader.ToString("X")} (expected {header})");
 
             int chunkSize = BitConverter.ToInt32(input.Array, input.Offset + 4);
+            chunkSize = unchecked((int)Endianess.GetUInt32(unchecked((uint)chunkSize)));
             if (header == "BRES" || header == "ASET" || header == "FILE")
                 chunkSize += int.MinValue;
             if (chunkSize <= 0 || chunkSize % 4 != 0)

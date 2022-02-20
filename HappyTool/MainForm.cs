@@ -1,6 +1,5 @@
 ﻿using DevExpress.XtraEditors;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -16,11 +15,16 @@ namespace HappyTool
     {
 
         #region PlaceHolders
+        private static byte[] decrypted { get; set; }
         public string CurrentFullPath { get; private set; }
         public string CurrentFullName { get; private set; }
         public string ExeVersion { get; private set; }
         public static string Server { get; private set; }
         public static int TicketSum { get; private set; }
+        public string FileType { get; private set; }
+        public bool Decrypt { get; private set; }
+        public bool Decompress { get; private set; }
+
         private Thread _responseThread;
         public static HttpListenerContext context;
         static HttpListener _httpListener;
@@ -309,194 +313,244 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
             }
 
         }
+        #region Compression/Encryption
 
-        private void DecryptingFolder_Click(object sender, EventArgs e)
+        public void LoadDirectory(string Dir)
         {
-            //Local instance of Folder Dialog 
-            FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
-            //Shows if user wants to make a new folder.
-            folderBrowserDialog.ShowNewFolderButton = true;
-            //remmeber previous folder selection...
-            //folderBrowserDialog.SelectedPath = @"C:\Users\Serenity\Documents\Happy Wars Achrive\0.5.2.0\Data\";
+            DirectoryInfo di = new DirectoryInfo(Dir);
 
-            //User clicked the correct project solution
-            //Shows ui.
-            if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
+            foreach (string s in Directory.GetDirectories(Dir, "**", SearchOption.AllDirectories))
             {
-                DirectoryInfo directory = new DirectoryInfo(folderBrowserDialog.SelectedPath);
-                if (!Directory.Exists(Application.StartupPath + @"\" + directory.Name + @"\"))
-                {
-                    System.IO.Directory.CreateDirectory(Application.StartupPath + @"\" + directory.Name + @"\");
-                }
+                string folders = "";
 
-                foreach (string Files in Folders(directory.FullName))
+                if (FileType == "Steam" && Decrypt == true)
                 {
-                    DirectoryInfo NameOfFolder = new DirectoryInfo(Files);
-                    if (!NameOfFolder.Name.Equals("audio"))
+                    folders = s.Substring(s.LastIndexOf("\\Data\\")).ToLower();
+                    if (!Directory.Exists(Application.StartupPath + @"\" + @"Steam Files\" + folders))
                     {
-                        GetDirectoryFiles(Files, NameOfFolder.Name);
-                    }
 
-
-                }
-                //checks if parent folder has any folders
-                if (IsDirectoryEmpty(directory.FullName) == false)
-                {
-                    GetDirectoryFiles(directory.FullName, directory.Name);
-                }
-                else
-                {
-                    foreach (string Files in Folders(directory.FullName))
-                    {
-                        GetDirectoryFiles(Files, directory.Name);
+                        Directory.CreateDirectory(Application.StartupPath + @"\" + @"Steam Files\" + folders);
                     }
                 }
+                if (FileType == "Steam" && Decrypt == false)
+                {
+                    folders = s.Substring(s.LastIndexOf("\\Data\\")).ToLower();
 
-                MessageBox.Show(Application.StartupPath + @"\" + directory.Name + @"\" + "Done!");
-            }
-
-        }
-        public static bool IsDirectoryEmpty(string path)
-        {
-            return !Directory.EnumerateFileSystemEntries(path).Any();
-        }
-        /// <summary>
-        /// Gets all Folders From Parent Directory.
-        /// </summary>
-        /// <param name="Path"></param>
-        /// <returns></returns>
-        private static string[] Folders(string Path)
-        {
-            List<string> folders = new List<string>();
-            string FolderName = Path.Substring(Path.LastIndexOf(@"\"));
-            foreach (string DataFolders in Directory.GetDirectories(Path))
-            {
-                
-                if (!Directory.Exists(Application.StartupPath + @"\" + FolderName + @"\" + DataFolders.Substring(DataFolders.LastIndexOf(@"\")) + @"\"))
-                {
-                    
-                    Directory.CreateDirectory(Application.StartupPath + @"\" + FolderName + @"\" + DataFolders.Substring(DataFolders.LastIndexOf(@"\")) + @"\");
                 }
-                if(!IsDirectoryEmpty(DataFolders))
+                if (FileType == "Xbox" && Decompress == true)
                 {
-                    folders.Add(DataFolders);
-                }
-                if(!DataFolders.Equals(""))
-                {
-                    foreach (string subFolders in Directory.GetDirectories(DataFolders))
+                    folders = s.Substring(s.LastIndexOf("\\media\\")).ToLower();
+                    if (!Directory.Exists(Application.StartupPath + @"\Xbox Files" + folders))
                     {
-                        folders.Add(subFolders);
-                        string SubFolderName = DataFolders.Substring(DataFolders.LastIndexOf(@"\"));
-                        if (!Directory.Exists(Application.StartupPath + @"\" + FolderName + @"\" + SubFolderName + subFolders.Substring(subFolders.LastIndexOf(@"\")) + @"\"))
-                        {
 
-                            Directory.CreateDirectory(Application.StartupPath + @"\" + FolderName + @"\" + SubFolderName + subFolders.Substring(subFolders.LastIndexOf(@"\")) + @"\");
-                        }
+                        Directory.CreateDirectory(Application.StartupPath + @"\Xbox Files" + folders);
                     }
                 }
-                
+                if (FileType == "Xbox" && Decompress == false)
+                {
+                    folders = s.Substring(s.LastIndexOf("\\media\\")).ToLower();
+                }
 
             }
 
-                return folders.ToArray();
+            foreach (string result in Directory.GetFiles(Dir, "*.*", SearchOption.AllDirectories))
+            {
+                DirectoryInfo dr = new DirectoryInfo(result);
+                if (FileType == "Steam" && Decrypt == true)
+                {
+                    DecryptAndUncompress(dr.FullName);
+                }
+                if (FileType == "Steam" && Decrypt == false)
+                {
+                    CompressAndEncrypt(dr.FullName);
+                }
+                if (FileType == "Xbox" && Decompress == true)
+                {
+                    Uncompress(dr.FullName);
+                }
+                if (FileType == "Xbox" && Decompress == false)
+                {
+                    Compress(dr.FullName);
+                }
+            }
+            MessageBox.Show("Done Writing Data...\n\rFor " + FileType);
         }
 
-        private static void GetDirectoryFiles(string Path, string Foldername)
+        private void Compress(string fullName)
         {
-            
-            foreach (string FIles in Directory.GetFiles(Path))
+            throw new NotImplementedException();
+        }
+
+        private void CompressAndEncrypt(string fullName)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void Uncompress(string Path)
+        {
+            byte[] Source = File.ReadAllBytes(Path);
+            FileInfo fileInfo = new FileInfo(Path);
+            if (fileInfo.Extension != string.Empty)
             {
-                byte[] Source = File.ReadAllBytes(FIles);
-                FileInfo fileInfo = new FileInfo(FIles);
-                string File_Extention = fileInfo.Extension;
 
-
-                if(File_Extention == ".zson")
+                switch (fileInfo.Extension)
                 {
-                    goto skipfile;
-                }
-                if (File_Extention == "")
-                {
-                    goto skipfile;
-                }
-                else
-                {
+                    case ".bres":
 
-                    if (File_Extention == ".bres")
-                    {
-                        byte[] decrypted = BFBR.Decrypt(Source, 0, Source.Length);
 
-                        byte[] decompressed = ZRES.Decompress(decrypted, 0, decrypted.Length);
                         System.Threading.Tasks.Task.Run(() =>
                         {
+                            byte[] decompressed = ZRES.Decompress(Source, 0, Source.Length);
                             BRES bres = new BRES(decompressed, 0, decompressed.Length);
-                            if (!Directory.Exists(Application.StartupPath + @"\Data\" + @"\" + Foldername + @"\" + bres.Name))
-                            {
-                                System.IO.Directory.CreateDirectory(Application.StartupPath + @"\Data\" + @"\" + Foldername + @"\" + bres.Name);
-                            }
                             foreach (var resource in bres.Resources)
                             {
-                                Regex pattern = new Regex("[\\<\\>\\:\\\" \\/\\|\\? \\*]");
-                                File.WriteAllBytes(Application.StartupPath + @"\Data\" + @"\" + Foldername + @"\" + bres.Name + @"\" + pattern.Replace(resource.Name, "_"), resource.Content.GetArraySegment().ToArray());
+                                if (!Directory.Exists(Application.StartupPath + @"\" + @"Xbox Files\" + Path.Substring(Path.LastIndexOf("\\media\\")).Replace(".bres", "") + @"\"))
+                                {
+                                    Directory.CreateDirectory(Application.StartupPath + @"\" + @"Xbox Files\" + Path.Substring(Path.LastIndexOf("\\media\\")).Replace(".bres", "") + @"\");
+                                }
+                                File.WriteAllBytes(Application.StartupPath + @"\" + @"Xbox Files\" + Path.Substring(Path.LastIndexOf("\\media\\")).Replace(".bres", "") + @"\" + new Regex("[\\<\\>\\:\\\" \\/\\|\\? \\*]").Replace(resource.Name, "_"), resource.Content.GetArraySegment().ToArray());
 
                             }
                         });
-                    }
-                    if (File_Extention == ".zson")
-                    {
-                        byte[] decompressed = ZRES.Decompress(Source, 0, Source.Length);
+                        break;
+                    case ".zson":
+                        byte[] decompressed2 = ZRES.Decompress(Source, 0, Source.Length);
+                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Xbox Files\" + Path.Substring(Path.LastIndexOf("\\media\\")), decompressed2);
+                        break;
+                    case ".nut":
+                        byte[] decompressed3 = ZRES.Decompress(Source, 0, Source.Length);
+                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Xbox Files\" + Path.Substring(Path.LastIndexOf("\\media\\")), decompressed3);
+                        break;
+                    case ".json":
+                        byte[] decompressed4 = ZRES.Decompress(Source, 0, Source.Length);
+                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Xbox Files\" + Path.Substring(Path.LastIndexOf("\\media\\")), decompressed4);
+                        break;
+                    case ".jpg":
+                        byte[] decompressed5 = ZRES.Decompress(Source, 0, Source.Length);
+                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Xbox Files\" + Path.Substring(Path.LastIndexOf("\\media\\")), decompressed5);
+                        break;
+                }
+            }
+        }
 
-                        string json = fileInfo.Directory.FullName.Substring(fileInfo.Directory.FullName.LastIndexOf(@"\Data\"));
-                        File.WriteAllBytes(Application.StartupPath + json + @"\" + FIles.Substring(FIles.LastIndexOf(@"\")).Replace(File_Extention, "") + File_Extention, decompressed);
-                    }
-                    else
-                    {
-                        byte[] decrypted = BFBR.Decrypt(Source, 0, Source.Length);
+        private void DecryptAndUncompress(string Path)
+        {
+            byte[] Source = File.ReadAllBytes(Path);
+            FileInfo fileInfo = new FileInfo(Path);
+            if (fileInfo.Extension != string.Empty)
+            {
+                switch (fileInfo.Extension)
+                {
+                    case ".bres":
+                        decrypted = BFBR.Decrypt(Source, 0, Source.Length);
 
                         byte[] decompressed = ZRES.Decompress(decrypted, 0, decrypted.Length);
-                        //if()
-                        string json = fileInfo.Directory.FullName.Substring(fileInfo.Directory.FullName.LastIndexOf(@"\Data\"));
-                        File.WriteAllBytes(Application.StartupPath + json + @"\" + FIles.Substring(FIles.LastIndexOf(@"\")).Replace(File_Extention, "") + File_Extention, decompressed);
-                    }
+
+                        System.Threading.Tasks.Task.Run(() =>
+                        {
+                            BRES bres = new BRES(decompressed, 0, decompressed.Length);
+                            foreach (var resource in bres.Resources)
+                            {
+                                if (!Directory.Exists(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")).Replace(".bres", "") + @"\"))
+                                {
+                                    Directory.CreateDirectory(Application.StartupPath + @"\" + @"Steam Files" + Path.Substring(Path.LastIndexOf("\\Data\\")).Replace(".bres", "") + @"\");
+                                }
+                                File.WriteAllBytes(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")).Replace(".bres", "") + @"\" + new Regex("[\\<\\>\\:\\\" \\/\\|\\? \\*]").Replace(resource.Name, "_"), resource.Content.GetArraySegment().ToArray());
+
+                            }
+                        });
+                        break;
+                    case ".zson":
+                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")), ZRES.Decompress(Source, 0, Source.Length));
+                        break;
+                    case ".nut":
+                        decrypted = BFBR.Decrypt(Source, 0, Source.Length);
+                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")), ZRES.Decompress(decrypted, 0, decrypted.Length));
+                        break;
+                    case ".json":
+                        decrypted = BFBR.Decrypt(Source, 0, Source.Length);
+                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")), ZRES.Decompress(decrypted, 0, decrypted.Length));
+                        break;
+                    case ".jpg":
+                        decrypted = BFBR.Decrypt(Source, 0, Source.Length);
+                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")), ZRES.Decompress(decrypted, 0, decrypted.Length));
+                        break;
                 }
-
-            skipfile:;
-
             }
         }
 
-        private void XboxDecompressFolder_Click(object sender, EventArgs e)
+        private void FolderDecrypt(object sender, EventArgs e)
         {
-        }
-
-        private void simpleButton5_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void FolderEncypt_Click(object sender, EventArgs e)
-        {
-            //Local instance of Folder Dialog 
-            FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
-            //Shows if user wants to make a new folder.
-            folderBrowserDialog.ShowNewFolderButton = true;
-            //remmeber previous folder selection...
-            folderBrowserDialog.SelectedPath = @"C:\Users\Serenity\Documents\Happy Wars Achrive\0.5.2.0\Data\";
-
-            //User clicked the correct project solution
-            //Shows ui.
-            if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
+            FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
+            DialogResult drResult = folderBrowserDialog1.ShowDialog();
+            if (drResult == DialogResult.OK)
             {
+                if (folderBrowserDialog1.SelectedPath.EndsWith(@"\Data"))
+                {
+                    Decrypt = true;
+                    LoadDirectory(folderBrowserDialog1.SelectedPath);
+                }
+                else
+                {
+                    MessageBox.Show("Select Data Directory!!");
 
-                string Foldername = Path.GetFullPath(folderBrowserDialog.SelectedPath).Substring(folderBrowserDialog.SelectedPath.LastIndexOf(@"\") + 1);
-                byte[] Source = File.ReadAllBytes(@"C:\Users\Serenity\Documents\Happy Wars Achrive\0.5.2.0\Data\Test\cam_COOP_Massive.bres");
-                byte[] decrypted = BFBR.Decrypt(Source, 0, Source.Length);
-                byte[] decompressed = ZRES.Decompress(decrypted, 0, decrypted.Length);
-                BRES bres = new BRES(decompressed, 0, decompressed.Length);
-
-
-                MessageBox.Show(Application.StartupPath + @"\" + Foldername + @"\" + "Done!");
+                }
             }
         }
+
+        private void xtraTabControl1_Selected(object sender, DevExpress.XtraTab.TabPageEventArgs e)
+        {
+            if (e.Page.Text == "Steam Files")
+            {
+                FileType = "Steam";
+            }
+            if (e.Page.Text == "Xbox Files")
+            {
+                FileType = "Xbox";
+            }
+        }
+
+        private void DecompressFolder(object sender, EventArgs e)
+        {
+            FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
+            DialogResult drResult = folderBrowserDialog1.ShowDialog();
+            if (drResult == DialogResult.OK)
+            {
+                if (folderBrowserDialog1.SelectedPath.EndsWith(@"\media"))
+                {
+                    Decompress = true;
+                    LoadDirectory(folderBrowserDialog1.SelectedPath);
+                }
+                else
+                {
+                    MessageBox.Show("Select Data Directory!!");
+
+                }
+            }
+        }
+
+        private void EncryptFolder(object sender, EventArgs e)
+        {
+            MessageBox.Show("Select Game Data Folder....");
+            FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
+            DialogResult drResult = folderBrowserDialog1.ShowDialog();
+            if (drResult == DialogResult.OK)
+            {
+                Decrypt = false;
+                LoadDirectory(folderBrowserDialog1.SelectedPath);
+            }
+        }
+
+        private void CompressFolder(object sender, EventArgs e)
+        {
+            MessageBox.Show("Select Game Media Folder....");
+            FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
+            DialogResult drResult = folderBrowserDialog1.ShowDialog();
+            if (drResult == DialogResult.OK)
+            {
+                Decompress = false;
+            }
+        }
+        #endregion
     }
 }
