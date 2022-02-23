@@ -81,11 +81,7 @@ namespace HappyTool
                     deflateStream.CopyTo(outputStream);
                     output = outputStream.ToArray();
                 }
-
-                var hash = BitConverter.ToUInt32(input, start + (length - 4));
-
-                //var outputHash = Adler32(output, 0, output.Length);
-                //if (outputHash != hash)
+                //if (Adler32(output, 0, output.Length) != BitConverter.ToUInt32(input, start + (length - 4)))
                 //    throw new InvalidDataException("Mismatching Adler32 hashes");
 
                 return output;

@@ -172,6 +172,7 @@ namespace HappyTool
             // 
             // simpleButton3
             // 
+            this.simpleButton3.Enabled = false;
             this.simpleButton3.Location = new System.Drawing.Point(136, 8);
             this.simpleButton3.Name = "simpleButton3";
             this.simpleButton3.Size = new System.Drawing.Size(122, 23);
@@ -223,7 +224,7 @@ namespace HappyTool
             this.IconOptions.Image = ((System.Drawing.Image)(resources.GetObject("MainForm.IconOptions.Image")));
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Happy Tool - By Serenity ver.70";
+            this.Text = "Happy Tool - By Serenity And Protty ver.71";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             ((System.ComponentModel.ISupportInitialize)(this.xtraTabControl1)).EndInit();
             this.xtraTabControl1.ResumeLayout(false);

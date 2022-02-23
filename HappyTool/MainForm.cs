@@ -25,6 +25,10 @@ namespace HappyTool
         public bool Decrypt { get; private set; }
         public bool Decompress { get; private set; }
 
+        private static string DecryptedLocation = Application.StartupPath + @"\Steam Files\Decrypted\";
+        private string EncryptedLocation = Application.StartupPath + @"\Steam Files\Encrypted\";
+        private string DecompressedLocation = Application.StartupPath + @"\Xbox Files\Decompressed\";
+        private string CompressedLocation = Application.StartupPath + @"\Xbox Files\Compressed\";
         private Thread _responseThread;
         public static HttpListenerContext context;
         static HttpListener _httpListener;
@@ -44,40 +48,6 @@ namespace HappyTool
             ShutDownServer();
         }
 
-        private void ShutDownServer()
-        {
-            try
-            {
-                labelControl2.Text = "Stopping server...";
-
-                if (_httpListener == null)
-                {
-
-                }
-                else
-                {
-                    _httpListener.Close();
-                    _httpListener = null;
-                }
-                if (_responseThread == null)
-                {
-
-                }
-                else
-                {
-                    _responseThread.Abort();
-                    _responseThread = null;
-                }
-                context = null;
-
-                labelControl2.Text = "Null...";
-                TurnOffServer.Checked = false;
-            }
-            catch
-            {
-
-            }
-        }
         #endregion
 
         #region FileDrop Functions
@@ -127,13 +97,43 @@ namespace HappyTool
             }
         }
 
-
-
-
-
         #endregion
 
         #region Networking/Patching
+        private void ShutDownServer()
+        {
+            try
+            {
+                labelControl2.Text = "Stopping server...";
+
+                if (_httpListener == null)
+                {
+
+                }
+                else
+                {
+                    _httpListener.Close();
+                    _httpListener = null;
+                }
+                if (_responseThread == null)
+                {
+
+                }
+                else
+                {
+                    _responseThread.Abort();
+                    _responseThread = null;
+                }
+                context = null;
+
+                labelControl2.Text = "Null...";
+                TurnOffServer.Checked = false;
+            }
+            catch
+            {
+
+            }
+        }
         private void VersionCheckAndPatch(string server, string FileName, string Version)
         {
             byte[] bytes = Encoding.ASCII.GetBytes(server);
@@ -181,8 +181,6 @@ namespace HappyTool
         {
             Application.Restart();
         }
-
-
         public static void PatchServer(string filepath, int position, byte[] data)
         {
             using (Stream stream = File.Open(filepath, FileMode.Open))
@@ -250,7 +248,6 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
             }
 
         }
-
         private bool CheckIfPatchesAreMade(string FilePath)
         {
             //we convert from byte to hex then finally string in one go, we also make sure that the length is the same as user's input.
@@ -294,12 +291,6 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
             }
             return raw;
         }
-
-        #endregion
-
-
-
-
         private void SetTickets_Click(object sender, EventArgs e)
         {
             if (!textEdit1.Text.Equals(string.Empty) && char.IsDigit(char.Parse(textEdit1.Text)))
@@ -313,6 +304,8 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
             }
 
         }
+        #endregion
+
         #region Compression/Encryption
 
         public void LoadDirectory(string Dir)
@@ -320,57 +313,77 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
             foreach (string s in Directory.GetDirectories(Dir, "**", SearchOption.AllDirectories))
             {
                 string folders = string.Empty;
-                switch(Decrypt)
+                if (FileType == "Steam")
                 {
-                    case true:
-                        folders = s.Substring(s.LastIndexOf("\\Data\\")).ToLower();
-                        if (!Directory.Exists(Application.StartupPath + @"\" + @"Steam Files\" + folders))
-                        {
+                    switch (Decrypt)
+                    {
+                        case true:
+                            folders = s.Substring(s.LastIndexOf("\\Data\\"));
+                            if (!Directory.Exists(DecryptedLocation + folders))
+                            {
 
-                            Directory.CreateDirectory(Application.StartupPath + @"\" + @"Steam Files\" + folders);
-                        }
-                        break;
+                                Directory.CreateDirectory(DecryptedLocation + folders);
+                            }
+                            break;
                         case false:
-                        folders = s.Substring(s.LastIndexOf("\\Data\\")).ToLower();
+                            folders = s.Substring(s.LastIndexOf("\\Data\\"));
+                            if (!Directory.Exists(EncryptedLocation + folders))
+                            {
 
-                        break;
+                                Directory.CreateDirectory(EncryptedLocation + folders);
+                            }
+                            break;
+                    }
                 }
-                switch(Decompress)
+                else
                 {
-                    case true:
-                        folders = s.Substring(s.LastIndexOf("\\media\\")).ToLower();
-                        if (!Directory.Exists(Application.StartupPath + @"\Xbox Files" + folders))
-                        {
+                    switch (Decompress)
+                    {
+                        case true:
+                            folders = s.Substring(s.LastIndexOf("\\media\\"));
+                            if (!Directory.Exists(DecompressedLocation + folders))
+                            {
 
-                            Directory.CreateDirectory(Application.StartupPath + @"\Xbox Files" + folders);
-                        }
-                        break;
-                    case false:
-                        folders = s.Substring(s.LastIndexOf("\\media\\")).ToLower();
-                        break;
+                                Directory.CreateDirectory(DecompressedLocation + folders);
+                            }
+                            break;
+                        case false:
+                            folders = s.Substring(s.LastIndexOf("\\media\\"));
+                            if (!Directory.Exists(CompressedLocation + folders))
+                            {
+
+                                Directory.CreateDirectory(CompressedLocation + folders);
+                            }
+                            break;
+                    }
                 }
+                
             }
-
+            
             foreach (string result in Directory.GetFiles(Dir, "*.*", SearchOption.AllDirectories))
             {
-                DirectoryInfo dr = new DirectoryInfo(result);
+            
                 switch (Decrypt)
                 {
                     case true:
-                        DecryptAndUncompress(dr.FullName);
+                        DecryptAndUncompress(result);
                         break;
                     case false:
-                        CompressAndEncrypt(dr.FullName);
+
+                        CompressAndEncrypt(result);
                         break;
                 }
-                switch (Decompress)
+                if (FileType == "Xbox")
                 {
-                    case true:
-                        Uncompress(dr.FullName);
-                        break;
-                    case false:
-                        Compress(dr.FullName);
-                        break;
+                    switch (Decompress)
+                    {
+                        case true:
+                            Uncompress(result);
+                            break;
+                        case false:
+                            Compress(result);
+                            break;
+                    }
                 }
             }
             MessageBox.Show("Done Writing Data...\n\rFor " + FileType);
@@ -402,7 +415,36 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
             File.WriteAllBytes(@"C:\Users\Serenity\Documents\cam_COOP_Massive.bres", s.ToArray());
         }
 
-        private void CompressAndEncrypt(string fullName)
+        private void CompressAndEncrypt(string Path)
+        {
+            byte[] Source = File.ReadAllBytes(Path);
+            string CurrentFolder = Path.Substring(Path.IndexOf("\\Data\\") + "\\Data\\".Length).Substring(0, Path.Substring(Path.IndexOf("\\Data\\") + "\\Data\\".Length).IndexOf("\\"));
+            FileInfo fileInfo = new FileInfo(Path);
+            switch (fileInfo.Extension)
+            {
+
+                //case ".zson":
+                //    File.WriteAllBytes(EncryptedLocation + Path.Substring(Path.LastIndexOf("\\Data\\")), ZRES.Compress(Source, 0, Source.Length));
+                //    break;
+                case ".nut":
+                    if(CurrentFolder == "nut" /*|| CurrentFolder == "json"*/)
+                    {
+                        byte[] zres = ZRES.Compress(Source, 0, Source.Length);
+                        File.WriteAllBytes(EncryptedLocation + Path.Substring(Path.LastIndexOf("\\Data\\")), BFBR.Encrypt(zres, 0, zres.Length));
+                    }
+                    break;
+                //case ".json":
+                //    byte[] zres2 = ZRES.Compress(Source, 0, Source.Length);
+                //    File.WriteAllBytes(EncryptedLocation  + Path.Substring(Path.LastIndexOf("\\Data\\")), BFBR.Encrypt(zres2, 0, zres2.Length));
+                //    break;
+                //case ".jpg":
+                //    byte[] zres3 = ZRES.Compress(Source, 0, Source.Length);
+                //    File.WriteAllBytes(EncryptedLocation  + Path.Substring(Path.LastIndexOf("\\Data\\")), BFBR.Encrypt(zres3, 0, zres3.Length));
+                //    break;
+            }
+        }
+
+        private static void BresFile()
         {
             BRES.Resource[] array = new BRES.Resource[]
 {
@@ -442,30 +484,30 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
                             BRES bres = new BRES(decompressed, 0, decompressed.Length);
                             foreach (var resource in bres.Resources)
                             {
-                                if (!Directory.Exists(Application.StartupPath + @"\" + @"Xbox Files\" + Path.Substring(Path.LastIndexOf("\\media\\")).Replace(".bres", "") + @"\"))
+                                if (!Directory.Exists(DecompressedLocation + Path.Substring(Path.LastIndexOf("\\media\\")).Replace(".bres", "") + @"\"))
                                 {
-                                    Directory.CreateDirectory(Application.StartupPath + @"\" + @"Xbox Files\" + Path.Substring(Path.LastIndexOf("\\media\\")).Replace(".bres", "") + @"\");
+                                    Directory.CreateDirectory(DecompressedLocation + Path.Substring(Path.LastIndexOf("\\media\\")).Replace(".bres", "") + @"\");
                                 }
-                                File.WriteAllBytes(Application.StartupPath + @"\" + @"Xbox Files\" + Path.Substring(Path.LastIndexOf("\\media\\")).Replace(".bres", "") + @"\" + new Regex("[\\<\\>\\:\\\" \\/\\|\\? \\*]").Replace(resource.Name, "_"), resource.Content.GetArraySegment().ToArray());
+                                File.WriteAllBytes(DecompressedLocation + Path.Substring(Path.LastIndexOf("\\media\\")).Replace(".bres", "") + @"\" + new Regex("[\\<\\>\\:\\\" \\/\\|\\? \\*]").Replace(resource.Name, "_"), resource.Content.GetArraySegment().ToArray());
 
                             }
                         });
                         break;
                     case ".zson":
                         byte[] decompressed2 = ZRES.Decompress(Source, 0, Source.Length);
-                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Xbox Files\" + Path.Substring(Path.LastIndexOf("\\media\\")), decompressed2);
+                        File.WriteAllBytes(DecompressedLocation + Path.Substring(Path.LastIndexOf("\\media\\")), decompressed2);
                         break;
                     case ".nut":
                         byte[] decompressed3 = ZRES.Decompress(Source, 0, Source.Length);
-                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Xbox Files\" + Path.Substring(Path.LastIndexOf("\\media\\")), decompressed3);
+                        File.WriteAllBytes(DecompressedLocation + Path.Substring(Path.LastIndexOf("\\media\\")), decompressed3);
                         break;
                     case ".json":
                         byte[] decompressed4 = ZRES.Decompress(Source, 0, Source.Length);
-                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Xbox Files\" + Path.Substring(Path.LastIndexOf("\\media\\")), decompressed4);
+                        File.WriteAllBytes(DecompressedLocation + Path.Substring(Path.LastIndexOf("\\media\\")), decompressed4);
                         break;
                     case ".jpg":
                         byte[] decompressed5 = ZRES.Decompress(Source, 0, Source.Length);
-                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Xbox Files\" + Path.Substring(Path.LastIndexOf("\\media\\")), decompressed5);
+                        File.WriteAllBytes(DecompressedLocation + Path.Substring(Path.LastIndexOf("\\media\\")), decompressed5);
                         break;
                 }
         }
@@ -473,47 +515,76 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
         private void DecryptAndUncompress(string Path)
         {
             byte[] Source = File.ReadAllBytes(Path);
-                switch (new FileInfo(Path).Extension)
+            FileInfo fileInfo  = new FileInfo(Path);
+            switch (fileInfo.Extension)
                 {
                     case ".bres":
                         decrypted = BFBR.Decrypt(Source, 0, Source.Length);
 
                         byte[] decompressed = ZRES.Decompress(decrypted, 0, decrypted.Length);
 
-                        System.Threading.Tasks.Task.Run(() =>
+                    System.Threading.Tasks.Task.Run(() =>
                         {
                             BRES bres = new BRES(decompressed, 0, decompressed.Length);
                             foreach (var resource in bres.Resources)
                             {
-                                if (!Directory.Exists(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")).Replace(".bres", "") + @"\"))
+                                if (!Directory.Exists(DecryptedLocation + Path.Substring(Path.LastIndexOf("\\Data\\")).Replace(".bres", "") + @"\"))
                                 {
-                                    Directory.CreateDirectory(Application.StartupPath + @"\" + @"Steam Files" + Path.Substring(Path.LastIndexOf("\\Data\\")).Replace(".bres", "") + @"\");
+                                    Directory.CreateDirectory(DecryptedLocation + Path.Substring(Path.LastIndexOf("\\Data\\")).Replace(".bres", "") + @"\");
                                 }
-                                File.WriteAllBytes(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")).Replace(".bres", "") + @"\" + new Regex("[\\<\\>\\:\\\" \\/\\|\\? \\*]").Replace(resource.Name, "_"), resource.Content.GetArraySegment().ToArray());
+                                else
+                                {
+                                    File.WriteAllBytes(BresFile(Path, resource), resource.Content.GetArraySegment().ToArray());
+                                }
+                                if (!Directory.Exists(DecryptedLocation + "Decrypted_Data"))
+                                {
+                                    Directory.CreateDirectory(DecryptedLocation + "Decrypted_Data");
+                                }
+                                else
+                                {
+                                    //string FileName = Application.StartupPath + @"\" + @"Steam Files\Decrypted_Data\List.Data";
 
-                                File.WriteAllBytes(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")).Replace(".bres", "") + @"\" + new Regex("[\\<\\>\\:\\\" \\/\\|\\? \\*]").Replace(resource.Name + "_Data", "_"), Encoding.Default.GetBytes(resource.Command + "\n" + resource.Name +"\n" + bres.Name));
+
+                                    //// Consider File Operation 1
+                                    //    FileStream fs = new FileStream(FileName, FileMode.OpenOrCreate);
+                                    //    StreamWriter str = new StreamWriter(fs);
+                                    //    str.BaseStream.Seek(0, SeekOrigin.End);
+                                    //    str.Write(Path.Substring(Path.LastIndexOf(@"\Data\")) + "\n" + bres.Name + "\n" + resource.Command + "\n" + resource.Name + "\n" + "========================================================" + Environment.NewLine);
+                                    //    //str.WriteLine(DateTime.Now.ToLongTimeString() + " " + DateTime.Now.ToLongDateString());
+                                    //    str.Flush();
+                                    //    str.Close();
+                                    //    fs.Close();
+                                    //    // Close the Stream then Individually you can access the file.
+                                    
+
+                                    ////File.AppendAllText(FileName, Path.Substring(Path.LastIndexOf(@"\Data\")) + "\n" + bres.Name + "\n" + resource.Command + "\n" + resource.Name + "\n" + "========================================================" + Environment.NewLine);
+                                   
+                                }
                             }
                         });
                         break;
                     case ".zson":
-                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")), ZRES.Decompress(Source, 0, Source.Length));
+                        File.WriteAllBytes(DecryptedLocation + Path.Substring(Path.LastIndexOf("\\Data\\")), ZRES.Decompress(Source, 0, Source.Length));
                         break;
                     case ".nut":
                         decrypted = BFBR.Decrypt(Source, 0, Source.Length);
-                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")), ZRES.Decompress(decrypted, 0, decrypted.Length));
+                        File.WriteAllBytes(DecryptedLocation + Path.Substring(Path.LastIndexOf("\\Data\\")), ZRES.Decompress(decrypted, 0, decrypted.Length));
                         break;
                     case ".json":
                         decrypted = BFBR.Decrypt(Source, 0, Source.Length);
-                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")), ZRES.Decompress(decrypted, 0, decrypted.Length));
+                        File.WriteAllBytes(DecryptedLocation + Path.Substring(Path.LastIndexOf("\\Data\\")), ZRES.Decompress(decrypted, 0, decrypted.Length));
                         break;
                     case ".jpg":
                         decrypted = BFBR.Decrypt(Source, 0, Source.Length);
-                        File.WriteAllBytes(Application.StartupPath + @"\" + @"Steam Files\" + Path.Substring(Path.LastIndexOf("\\Data\\")), ZRES.Decompress(decrypted, 0, decrypted.Length));
+                        File.WriteAllBytes(DecryptedLocation + Path.Substring(Path.LastIndexOf("\\Data\\")), ZRES.Decompress(decrypted, 0, decrypted.Length));
                         break;
                 }
         }
 
-
+        private static string BresFile(string Path, BRES.Resource resource)
+        {
+            return DecryptedLocation + Path.Substring(Path.LastIndexOf("\\Data\\")).Replace(".bres", "") + @"\" + new Regex("[\\<\\>\\:\\\" \\/\\|\\? \\*]").Replace(resource.Name, "_");
+        }
 
         private void xtraTabControl1_Selected(object sender, DevExpress.XtraTab.TabPageEventArgs e)
         {
@@ -543,7 +614,7 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
                         }
                         else
                         {
-                            MessageBox.Show("Select Data Directory!!");
+                            MessageBox.Show("Select media Directory!!");
 
                         }
                     }
@@ -573,26 +644,28 @@ context.Request.RawUrl/*, req, StartupDate.ToString("R")*/);
             switch (FileType)
             {
                 case "Xbox":
-                    if (Directory.Exists(Application.StartupPath + @"\Xbox Files\media"))
+                    if (Directory.Exists(CompressedLocation + "media"))
                     {
                         Decompress = false;
-                        LoadDirectory(Application.StartupPath + @"\Xbox Files\media");
+                        LoadDirectory(CompressedLocation + "media");
                     }
                     else
                     {
-                        MessageBox.Show(Application.StartupPath + @"\Xbox Files\media" + "\nwas Not Found!");
+                        MessageBox.Show(CompressedLocation + "media" + "\nwas Not Found!");
                     }
                     break;
 
                 case "Steam":
-                    if(Directory.Exists(Application.StartupPath + @"\Steam Files\data"))
+                    if(Directory.Exists(DecryptedLocation + "Data"))
                     {
                         Decrypt = false;
-                        LoadDirectory(Application.StartupPath + @"\Steam Files\data");
+                        LoadDirectory(DecryptedLocation + "Data");
+
+                        MessageBox.Show(EncryptedLocation + "Data" + "\nwas Made!");
                     }
                     else
                     {
-                        MessageBox.Show(Application.StartupPath + @"\Steam Files\data" + "\nwas Not Found!");
+                        MessageBox.Show(DecryptedLocation + "Data" + "\nwas Not Found!");
                     }
                     break;
             }
