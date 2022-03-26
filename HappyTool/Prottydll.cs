@@ -118,7 +118,7 @@ namespace HappyTool
         public static byte[] Encrypt(byte[] input, int start, int length)
         {
             var bytes = 4 + 32 + length;
-            var alignment = (4 - (bytes % 4)) % 4;
+            var alignment = (8 - (bytes % 8)) % 8;
             var output = new byte[4 + bytes + alignment];
 
             output[0] = (byte)'B';
